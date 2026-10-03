@@ -1,0 +1,178 @@
+.salyra-header,
+.salyra-footer {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px max(5vw, calc((100vw - 1320px) / 2));
+  color: #181818;
+  background: #fff;
+}
+.salyra-header {
+  border-bottom: 1px solid #dddde2;
+}
+.salyra-brand {
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.salyra-brand span {
+  color: #e4002b;
+  margin: 0 3px;
+}
+.salyra-header nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 13px;
+}
+.salyra-header nav > a {
+  text-decoration: none;
+}
+.salyra-components {
+  position: relative;
+}
+.salyra-components summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 8px 0;
+}
+.salyra-components summary::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 10px;
+  border-right: 1px solid;
+  border-bottom: 1px solid;
+  transform: rotate(45deg);
+  vertical-align: 3px;
+}
+.salyra-component-menu {
+  position: absolute;
+  z-index: 30;
+  top: 100%;
+  right: 0;
+  width: 260px;
+  padding: 8px;
+  border: 1px solid #dddde2;
+  background: #fff;
+}
+.salyra-component-menu a {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px;
+  text-decoration: none;
+}
+.salyra-component-menu a:hover,
+.salyra-component-menu a[aria-current] {
+  background: #f7f7f8;
+}
+.salyra-component-menu strong {
+  font-weight: 500;
+}
+.salyra-component-menu small {
+  color: #626262;
+  font-size: 11px;
+}
+.salyra-footer {
+  font-size: 12px;
+  border-top: 1px solid #dddde2;
+}
+.salyra-catalog {
+  padding: 56px 0;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.salyra-catalog-heading {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 28px;
+}
+.salyra-catalog-heading h2 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -1.1px;
+  text-align: left;
+}
+.salyra-catalog-heading p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #626262;
+}
+.salyra-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid #dddde2;
+  border-left: 1px solid #dddde2;
+}
+.salyra-catalog-grid article {
+  padding: 28px;
+  border-right: 1px solid #dddde2;
+  border-bottom: 1px solid #dddde2;
+}
+.salyra-component-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  font-size: 12px;
+  color: #626262;
+}
+.salyra-component-heading > span {
+  color: #e4002b;
+}
+.salyra-catalog-grid h3 {
+  font-size: 22px;
+  letter-spacing: -0.7px;
+  margin: 0 0 16px;
+}
+.salyra-catalog-grid p {
+  min-height: 48px;
+  margin: 0 0 24px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #626262;
+}
+.salyra-catalog-grid article > div:last-child {
+  display: flex;
+  gap: 24px;
+  font-size: 12px;
+  text-underline-offset: 4px;
+}
+@media (max-width: 800px) {
+  .salyra-catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .salyra-footer > span {
+    display: none;
+  }
+}
+@media (max-width: 520px) {
+  .salyra-header {
+    padding: 20px 5vw;
+    gap: 16px;
+  }
+  .salyra-header nav {
+    gap: 14px;
+    font-size: 11px;
+  }
+  .salyra-brand {
+    font-size: 22px;
+  }
+  .salyra-catalog-grid {
+    grid-template-columns: 1fr;
+  }
+  .salyra-catalog-heading {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .salyra-catalog-grid p {
+    min-height: 0;
+  }
+}

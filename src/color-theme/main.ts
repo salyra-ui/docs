@@ -1,0 +1,285 @@
+import { siteHeader, siteFooter, catalogMarkup } from "../shell";
+import releases from "../../documentation/releases.json";
+import { changelogContent } from "./changelog";
+import "./changelog.css";
+import "./eyedropper-examples.css";
+import { draftScopeExample } from "./scope-recipes";
+/// <reference types="vite/client" />
+import { mountCompositionExample } from "./composition";
+import { mountWorkflowGallery } from "./workflow-gallery";
+import "@salyra-ui/color-picker/styles.css";
+import "@salyra-ui/theme-studio/styles.css";
+import "./site.css";
+import {
+  createColorStore,
+  type ColorProviderElement,
+} from "@salyra-ui/color-picker/vanilla";
+import {
+  integrations,
+  colorMarkup,
+  modeExample,
+  packageFor,
+  type Kit,
+} from "./snippets";
+import { referenceTable, mountReference } from "./reference";
+import { mountExplorer, mountRenderingLab, codePanel, escape } from "./gallery";
+const app = document.querySelector<HTMLDivElement>("#app")!;
+const page = document.body.dataset.page ?? "docs";
+const base = import.meta.env.BASE_URL;
+const releaseLabel = `v${releases.current}${releases.versions.find((release) => release.version === releases.current)?.status === "preview" ? " preview" : ""}`;
+const link = (file: string) => {
+  if (file === "site.html") return `${base}index.html`;
+  if (file.startsWith("docs.html")) {
+    const suffix = file.slice("docs.html".length);
+    const query = new URLSearchParams(suffix.split("#")[0]);
+    const requested = query.get("kit");
+    const theme =
+      requested !== null
+        ? requested === "theme-studio"
+        : document.body.dataset.component === "theme-studio";
+    query.delete("kit");
+    const search = query.size ? "?" + query : "";
+    const hash = suffix.includes("#") ? "#" + suffix.split("#")[1] : "";
+    return `${base}${theme ? "theme-studio" : "color-picker"}.html${search}${hash}`;
+  }
+  return `${base}${file}`;
+};
+const brand = `<a class="brand" href="${link("site.html")}" aria-label="Salyra UI home">salyra<span>/</span>ui<span class="brand-dot" aria-hidden="true"></span></a>`;
+const nav = siteHeader(
+  document.body.dataset.component ??
+    (page === "color"
+      ? "color-picker"
+      : page === "generator"
+        ? "theme-studio"
+        : ""),
+);
+const footer = siteFooter();
+const cleanup: (() => void)[] = [];
+window.addEventListener("pagehide", (event) => {
+  if (!event.persisted) cleanup.forEach((fn) => fn());
+});
+if (page === "landing") {
+  app.innerHTML = `${nav}<main id="main"><section class="landing-hero"><div class="hero-copy"><p class="product-label">Salyra UI</p><h1>Color.<br>With controls.</h1><p class="lead">Components in harmony with your stack. Use a ready-made editor or build your own with context roots, native inputs and custom markers.</p><div class="actions"><a class="button solid" href="${link("color.html")}">Explore color picker</a><a class="button" href="${link("generator.html")}">Explore theme studio</a></div></div><div class="hero-component"><div class="preview-label">Color picker <span>Interactive</span></div><div id="hero-picker"></div><div class="hero-color-result"><span id="hero-swatch"></span><div><strong id="hero-name"></strong><code id="hero-value"></code></div></div></div></section><div class="framework-strip"><span>Framework adapters</span>${integrations.map((i) => `<span>${i}</span>`).join("")}</div><section class="product-section"><div class="section-number">01</div><div><h2>Pick a color.</h2><p>Choose a rectangle or a wheel, enter channel values and adjust opacity. Every change gives you the color name and values in all six formats.</p><a class="text-link" href="${link("color.html")}">View color picker examples</a></div><div class="format-index"><span>HEX</span><span>RGB</span><span>HSL</span><span>HSV</span><span>OKLCH</span><span>OKLab</span></div></section><section class="product-section"><div class="section-number">02</div><div><h2>Build a theme.</h2><p>Start with primary, then add secondary and accent if you need them. Choose the radius, borders and backgrounds your editor will control.</p><a class="text-link" href="${link("generator.html")}">View theme studio examples</a></div><div class="role-index"><span>Primary</span><span>Secondary</span><span>Accent</span></div></section><section class="landing-examples"><div class="section-heading"><h2>See the component.<br>Use the code.</h2><p>Try an example, choose your framework and copy its code.</p></div><div id="landing-explorer"></div></section><section id="composition" class="landing-examples"><div class="section-heading"><h2>Your markup.<br>Shared color state.</h2><p>Root connects the controls. You choose the labels, layout, marker and classes. This editor uses the v1 primitives without the default picker stylesheet.</p></div><div id="composition-example"></div><p><a class="text-link" href="${link("docs.html?kit=color-picker#composition")}">See the composition API</a></p></section><section class="feature-grid"><article><h3>Forms, history &amp; saved colors</h3><p>Submit colors with opacity, undo changes and keep recent or favorite colors. Use the same color store across your controls.</p><a class="text-link" href="${link("color.html#workflows")}">Try the color workflows</a></article><article><h3>Edit, then apply</h3><p>Keep a separate draft, undo edits and lock colors during generation. Apply commits your changes. Cancel restores the current theme.</p><a class="text-link" href="${link("generator.html#workflows")}">Try the theme workflows</a></article><article><h3>Predictable rendering</h3><p>Pass a theme to render it immediately. If you load it from an API, choose what appears while loading and which theme to use if the request fails.</p><a class="text-link" href="${link("generator.html#rendering")}">Try the rendering examples</a></article></section></main>${footer}`;
+  document
+    .querySelector(".framework-strip")!
+    .insertAdjacentHTML("afterend", catalogMarkup());
+  const host = document.querySelector("#hero-picker")!;
+  host.innerHTML = colorMarkup("rectangle");
+  const store = createColorStore("#5268E0");
+  const provider = host.querySelector<ColorProviderElement>("cp-provider")!;
+  provider.setStore(store);
+  // A deliberately small composition: surface, hue and channel fields only.
+  provider.querySelector('cp-slider[channel="alpha"]')!.remove();
+  provider.querySelector("cp-alpha-input")!.remove();
+  provider.querySelector("cp-mode")!.remove();
+  const update = () => {
+    const color = store.getColor();
+    document.querySelector<HTMLElement>("#hero-swatch")!.style.background =
+      color.hex;
+    document.querySelector("#hero-name")!.textContent = color.name;
+    document.querySelector("#hero-value")!.textContent = color.hex;
+  };
+  provider.addEventListener("color-change", update);
+  update();
+  cleanup.push(
+    mountExplorer(
+      document.querySelector("#landing-explorer")!,
+      "color-picker",
+      "wheel",
+    ),
+  );
+  cleanup.push(
+    mountCompositionExample(
+      document.querySelector("#composition-example")!,
+      "color-picker",
+    ),
+  );
+} else if (page === "changelog") {
+  const kit: Kit =
+    (new URLSearchParams(location.search).get("kit") ??
+      document.body.dataset.component) === "theme-studio"
+      ? "theme-studio"
+      : "color-picker";
+  app.innerHTML = `${nav}${changelogContent(base.replace(/versions\/[^/]+\/$/, ""), kit)}${footer}`;
+} else if (page === "color" || page === "generator") {
+  const color = page === "color",
+    kit: Kit = color ? "color-picker" : "theme-studio";
+  app.innerHTML = `${nav}<main id="main" class="catalog-page"><header class="page-heading"><div><p class="product-label">${color ? "Standalone color components" : "Theme components & generator"}</p><h1>${color ? "color<span>/</span>picker" : "theme<span>/</span>studio"}</h1></div><div class="page-intro"><p>${color ? "Use the rectangle, wheel or channel inputs to choose a color. Each example includes opacity controls and returns the color name and values in six formats." : "Build an editor for the colors and dimensions your application uses. Try primary on its own, edit three colors together or choose individual radius and border fields."}</p><a class="text-link" href="${link("docs.html?kit=" + kit)}">${color ? "Color picker" : "Theme studio"} API & installation</a></div></header><section class="examples-section" aria-labelledby="examples-title"><div class="section-heading"><h2 id="examples-title">Component examples</h2><p>Try each layout in the preview. Open Code to choose a framework and copy the component and its styles.</p></div><div id="kit-explorer"></div></section><section id="workflows" class="examples-section"><div class="section-heading"><h2>Workflow examples</h2><p>Try each helper on its own. Open Code to copy or download the complete Vanilla example. ${color ? "Forms &amp; saved colors" : "Draft &amp; Apply"} in Working examples includes native components for all six integrations.</p></div><div id="workflow-gallery"></div></section>${color ? `<section class="reference-band"><article><h3>One color, six formats</h3><p>Each numeric channel has its own input. Switch formats to read the same color as HEX, RGB, HSL, HSV, OKLCH or OKLab.</p></article><article><h3>Names & alpha</h3><p>Read the nearest name from the bundled color list and check whether it is an exact match. Set opacity with a slider, a numeric input or the store.</p></article><article><h3>Compose your controls</h3><p>Add only the controls your layout needs. In Custom controls, change the dot text, colors and sizes, then copy the component and updated CSS.</p></article></section>` : `<section id="rendering" class="examples-section"><div class="section-heading"><h2>Loading & fallback</h2><p>See what appears when a theme is supplied directly, loads successfully, fails to load or times out.</p></div><div id="rendering-lab"></div></section><section class="reference-band"><article><h3>Custom theme names</h3><p>The primary color provides a suggested name. Enter your own name and it stays the same as you edit the theme.</p></article><article><h3>Only the tokens you need</h3><p>JSON and CSS include the selected colors and fields. Primary only exports primary. Radius & borders lets you choose individual fields and one or both appearance modes.</p></article><article><h3>System, light & dark</h3><p>Choose system, light or dark and keep that preference after a refresh. Use the mode hook if you want to build your own buttons or dropdown.</p></article></section>`}<section id="composition" class="examples-section"><div class="section-heading"><h2>Build your own editor</h2><p>${color ? "ColorPicker.Root shares the color state. Add only the surfaces, sliders and fields you need, with your own labels and classes." : "ThemeProvider supplies context and a CSS scope in one component. Use Root and Scope separately when the editor and preview need different boundaries. PickerRoot connects your color controls to a theme role."}</p></div><div id="composition-example"></div><p><a class="text-link" href="${link("docs.html?kit=" + kit + "#composition")}">Composition guide and API</a></p></section><section class="install-section"><div><h2>Install ${color ? "color picker" : "theme studio"}</h2><p>Install the package, then choose the import for your framework. ${color ? "It includes the color core and stylesheet. It does not depend on theme studio." : "It includes the theme core, framework components and styles, with color picker as its dependency."}</p></div><div id="installation"></div></section></main>${footer}`;
+  cleanup.push(mountExplorer(document.querySelector("#kit-explorer")!, kit));
+  if (!color)
+    cleanup.push(mountRenderingLab(document.querySelector("#rendering-lab")!));
+  cleanup.push(
+    mountWorkflowGallery(document.querySelector("#workflow-gallery")!, kit),
+  );
+  cleanup.push(
+    mountCompositionExample(
+      document.querySelector("#composition-example")!,
+      kit,
+    ),
+  );
+  installation(document.querySelector("#installation")!, kit);
+} else {
+  const kit: Kit = ["theme-studio", "theme-kit"].includes(
+    new URLSearchParams(location.search).get("kit") ?? "",
+  )
+    ? "theme-studio"
+    : "color-picker";
+  const color = kit === "color-picker";
+  app.innerHTML = `${nav}<div class="docs-layout"><aside class="docs-sidebar"><div class="docs-kit-tabs"><a ${color ? 'aria-current="page"' : ""} href="${link("docs.html?kit=color-picker")}">Color picker</a><a ${!color ? 'aria-current="page"' : ""} href="${link("docs.html?kit=theme-studio")}">Theme studio</a></div><nav aria-label="Documentation sections"><a href="#overview">Overview</a><a href="#installation">Installation</a><a href="#examples">Examples</a><a href="#workflows">Workflow examples</a><a href="#composition">Composition</a><a href="#output">Output</a><a href="#workflow">${color ? "Forms & history" : "Draft & history"}</a><a href="#customization">Customization</a>${color ? "" : `<a href="#rendering">Rendering & fallback</a><a href="#persistence">Persistence & freshness</a>`}<a href="#reference">API reference</a></nav></aside><main id="main" class="docs-content"><section id="overview"><p class="api-note">${releaseLabel}</p><p class="product-label">${color ? "Color picker" : "Theme studio"} documentation</p><h1>${color ? "Color picker" : "Theme studio"}</h1><p class="lead">${color ? "Build a color editor with a rectangle or wheel, sliders and separate channel inputs. The store gives you the selected color in every supported format." : "Set up a shared theme context, then add the editors and controls your application needs. You can supply a theme, choose a preset or load one from an API."}</p><div class="docs-callout">${color ? "ColorPicker.Root shares one selected color across its surfaces, sliders and inputs. Arrange those parts in your own layout." : "Theme studio uses color picker for its color controls. Primary, secondary and accent belong to the theme context."}</div></section><section id="installation"><h2>Installation</h2><p>Install the package once. Choose your framework below for the import and stylesheet setup.</p><div id="docs-installation"></div><p>The ready-made components use <code>styles.min.css</code>. Load it once in your application entry or root layout. A custom composition can use only your own CSS. For Angular, add the <code>@import</code> to your <code>styles.css</code> file. The <code>styles.css</code> package export loads the same minified CSS.</p><p>Frameworks are optional peer dependencies. Install the framework your application uses. Importing its entry does not load the other implementations. ${color ? "The core can also be used without a UI adapter." : "Theme studio depends on color picker. Its stylesheet includes the color picker styles."}</p><div class="asset-downloads"><table aria-label="Vanilla downloads"><thead><tr><th scope="col">File</th><th scope="col">Standard</th><th scope="col">Minified</th></tr></thead><tbody>${["js", "css"].map((extension) => `<tr><th scope="row">${extension === "js" ? "JavaScript" : "Stylesheet"}</th><td><a href="${link("downloads/" + kit + "." + extension)}" download><code>${kit}.${extension}</code></a></td><td><a href="${link("downloads/" + kit + ".min." + extension)}" download><code>${kit}.min.${extension}</code></a></td></tr>`).join("")}</tbody></table></div><p class="muted">The Vanilla build runs without a framework. Copy the downloads to your public assets directory. The examples use minified files under /assets/. Use .js and .css filenames for the Standard versions. With a bundler, import the Vanilla module instead of loading the downloaded script. Choose Standard for readable files or Minified for smaller production assets. Both versions have the same API. ${color ? "" : "Theme studio CSS includes the color picker styles."}</p></section><section id="examples"><h2>Working examples</h2><p>Choose a layout and try its controls. Open Code for the implementation in your framework. For labels, classes and styling, see <a href="#customization">Customization</a>.</p><div id="docs-explorer"></div></section><section id="workflows" class="examples-section"><div class="section-heading"><h2>Workflow examples</h2><p>Try each helper on its own. Open Code to copy or download the complete Vanilla example. ${color ? "Forms &amp; saved colors" : "Draft &amp; Apply"} in Working examples includes native components for all six integrations.</p></div><div id="workflow-gallery"></div></section><section id="composition"><h2>Composition</h2>${color ? `<p>Use ColorPicker.Root for a custom editor with your own markup. Use ColorProvider with the styled components for a ready-made layout. Both share one color store with their descendants. A second Root or Provider with its own store creates an independent picker. In React, importing <code>ColorPicker as Color</code> lets you write <code>Color.Root</code> and <code>Color.Input</code>. <code>Color.ChannelInput</code> edits one numeric channel.</p><div class="docs-diagram"><strong>Custom layout: ColorPicker.Root</strong><div><span>Area / Wheel + Thumb</span><span>Slider</span><span>Input / ChannelInput</span><span>FormatTrigger</span></div></div><p>Use createColorStore() for programmatic updates and subscriptions. React, Svelte, Vue and Angular also expose useColorStore() and useColor() inside a child of ColorPicker.Root or ColorProvider. Vanilla and Astro use the native element’s store and bubbling DOM events.</p>` : `<p>Choose one entry point. ThemeProvider includes context, a CSS scope and a disabled controls boundary. ThemeStudio.Root provides context without a layout. Put ThemeStudio.Scope below it wherever the theme variables should apply.</p><div class="docs-diagram"><strong>Ready layout</strong><div><span>ThemeProvider → controls and application</span></div></div><div class="docs-diagram"><strong>Your own layout</strong><div><span>ThemeStudio.Root → ThemeStudio.Scope → controls and application</span></div></div><p>You do not need to put Root and Scope inside a Provider for the same theme. Multiple scopes under one Root share its store. A nested Root with a different store creates independent state. Scope alone only changes where CSS variables apply. Portalled content needs its own scope or copied variables.</p>`}<h3>Build the layout yourself</h3><p>The v1 primitives provide behavior and state. Your markup owns labels, spacing, thumb content and controls. ${color ? "This example uses a square marker, custom format text and separate native inputs." : "This example uses square markers, custom role buttons and separate native inputs."} Open Code to choose a framework and download the component and its styles.</p><div id="composition-example"></div><p>React, Svelte and Vue expose ColorPicker.Root and ThemeStudio.Root as context-only components. ThemeStudio.Scope applies the CSS variables to your chosen container. Angular provides directives on native elements. Vanilla binds your existing DOM. Astro renders native controls with explicit server seeds and connects them in the browser.</p><div id="composition-code"></div>${color ? "" : `<h3>Preview a draft inside your application</h3><p>The outer Provider uses the applied store. The nested Root uses editor.store, so edits appear only in the inner Scope. Save calls editor.apply() to update the applied store. Cancel calls editor.cancel() to restore the latest applied theme.</p><div id="draft-scope-code"></div><p>These examples keep appearance storage off so the draft cannot overwrite an app preference. For persistence, configure storage on the applied store and its Provider only. Save here commits local state, it does not send a backend request. If your API must confirm the change first, save editor.store.getSnapshot().theme to your backend before calling apply(). A conflicting external update makes apply() throw. Only use apply({force:true}) when overwriting that update is intentional.</p><p>Keep stores per component instance or server request. Never share a user theme through a server module variable. Every editor is destroyed when its owner is removed. The React example creates its editor in an effect and shows a short loading message before the draft controls mount.</p><p>For undo, generation locks, saved themes and full runnable projects, open <a href="#examples">Working examples</a> and choose Draft &amp; Apply.</p>`}</section><section id="output"><h2>${color ? "Names, formats & values" : "Theme configuration & tokens"}</h2><p>${color ? "Call getColor() to read the name, match status, channels and formatted strings. Use getValue(format) for numeric values in a specific format, or color.formats for a string ready to display. RGB uses 0–255. HSL and HSV use degrees and percentages. OKLCH and OKLab lightness uses 0–1 in the store and 0–100% in the inputs. HSV describes the picker color and is not a CSS color function." : "Pass a selection to themeConfiguration() or ThemeExport to get only the colors and dimensions your editor handles. Mounted editor components register their color and geometry fields automatically. An explicit selection takes priority and also seeds the server export. The same selection applies to theme, JSON and CSS. Backgrounds include only the active appearance unless you explicitly select both modes. Use mergeThemeConfiguration() to apply a partial export to an existing theme."}</p><div id="output-code"></div></section><section id="workflow"><h2>${color ? "Forms, history & saved colors" : "Draft editing & history"}</h2>${color ? `<p>Use bindColorForm to submit the selected color with a normal form. It handles reset, validation and disabled fields. Mount the binding on the client and destroy it on unmount.</p><p>createColorHistory tracks color and alpha changes. mountHistory groups each drag into one undo step. Format and view changes stay outside the color history. Recent and favorite lists are optional, with your own labels and classes.</p>` : `<p>createThemeEditor creates a separate store for the draft. Put it around the editing controls and keep the applied store around your application. Apply commits the theme and appearance preference. Cancel reloads the latest applied theme.</p><p>Undo and redo operate on the draft. Lock a color to preserve it when generating a harmony. A locked color can still be edited manually. Live mode applies every change immediately.</p><p>If the applied theme changes while a draft has edits, the editor reports a conflict. Cancel loads the new theme. apply({ force: true }) explicitly replaces it with the draft.</p><p>ThemeExport accepts format="tailwind". The stylesheet maps selected tokens to Tailwind 4 utilities. Radius and border width are exported only when configured. Saved themes and configuration JSON use schemaVersion: 1. parseTheme also accepts older unversioned themes.</p>`}<p>Choose ${color ? "Forms & saved colors" : "Draft & Apply"} in Working examples. Open Code for a complete project, then use Download files to get the component, controller, styles and project configuration.</p></section><section id="customization"><h2>Customization</h2><p>${color ? "Start with the composition example above when you need full control. Put your classes and content directly on each primitive. Root adds no layout. The complete presets also offer classes, labels and render hooks for smaller adjustments." : "Use ThemeStudio.PickerRoot to share the active color across only the controls you mount. Place your own labels around GeometryInput and use RoleTrigger for custom text or icons. ThemeMode accepts custom content, and useThemeMode() lets you build buttons or a dropdown. Call context hooks in a child of ThemeProvider so they can access its store."}</p><h3>${color ? "Labels, classes and controls" : "Labels, classes and swatches"}</h3><p>Edit the labels and dimensions, then copy the updated component and CSS.</p><div id="custom-explorer"></div><h3>${color ? "Styling variables" : "Custom appearance buttons"}</h3><div id="custom-code"></div>${color ? `<table><thead><tr><th>CSS variable / selector</th><th>Controls</th></tr></thead><tbody><tr><td>--cp-thumb-size / --cp-thumb-radius</td><td>Single color dot size and shape</td></tr><tr><td>--cp-track-height / --cp-track-radius</td><td>Hue and alpha track geometry</td></tr><tr><td>--cp-hue-gradient</td><td>Hue bar background</td></tr><tr><td>[data-cp-part="surface"]</td><td>Picking surface</td></tr><tr><td>[data-cp-part="thumb-text"]</td><td>Thumb content</td></tr></tbody></table>` : ""}</section>${color ? "" : `<section id="rendering"><h2>Rendering & fallback</h2><p>A supplied theme renders immediately. If no theme is available, ThemeLoading shows your content while loadTheme() runs. A rejected request, invalid response or timeout applies fallbackTheme. ThemeReady displays the loaded or fallback theme, and ThemeError lets you show a retry action. During revalidation, the current theme stays visible.</p><div id="docs-rendering"></div><h3>Server rendering</h3><p>For server rendering, create a store for each request and supply the theme and resolved mode. Use those same values when hydrating the client. Supply selection on the provider and ThemeExport when the server must return a partial configuration. React, Svelte, Vue, Angular and Astro support this setup. Vanilla elements mount in the browser, while their core can generate CSS on the server. Browser storage and the system preference are read after mount.</p><div id="ssr-code"></div></section><section id="persistence"><h2>Persistence & freshness</h2><p>Use browserStorage() to save the full context and browserModeStorage() to save the appearance preference. A supplied theme takes priority over the browser cache. To restore a cached theme on startup, pass storage and a fallbackTheme.</p><p>A cached theme can appear while the loader checks for an update. The HTTP loader supports ETag and 304 responses. Storage events update other tabs on the same origin. Use focus revalidation, polling or watchThemeUpdates() when changes can come from another application.</p><div id="cache-code"></div><h3>HTTP response</h3><p>Return a full Theme object from the endpoint. Send an ETag that changes whenever the theme changes. Return 304 when If-None-Match matches that revision, or return the updated theme otherwise. For partial editor exports, merge them into the stored theme before returning it to the loader.</p><p>Redis is optional server infrastructure. The browser still needs an HTTP revision/ETag or a notification through SSE/WebSocket to know that a theme changed.</p></section>`}<section id="reference"><h2>API reference</h2>${referenceTable(kit)}</section></main></div>${footer}`;
+  cleanup.push(
+    mountCompositionExample(
+      document.querySelector("#composition-example")!,
+      kit,
+    ),
+  );
+  cleanup.push(
+    mountWorkflowGallery(document.querySelector("#workflow-gallery")!, kit),
+  );
+  cleanup.push(mountReference(document.querySelector("#reference")!, kit));
+  installation(document.querySelector("#docs-installation")!, kit);
+  cleanup.push(
+    mountExplorer(
+      document.querySelector("#docs-explorer")!,
+      kit,
+      undefined,
+      "examples",
+    ),
+  );
+  cleanup.push(
+    mountExplorer(
+      document.querySelector("#custom-explorer")!,
+      kit,
+      "custom",
+      "customization",
+    ),
+  );
+  if (!color)
+    codePanel(document.querySelector("#draft-scope-code")!, draftScopeExample, {
+      label: "Nested draft preview",
+      baseName: "DraftPreview",
+    });
+  const pkg = (_i: (typeof integrations)[number]) => `@salyra-ui/${kit}`;
+  codePanel(
+    document.querySelector("#composition-code")!,
+    (i) =>
+      color
+        ? `import { createColorStore } from '${pkg(i)}';\n\nconst store = createColorStore('#5268E080', 'rgb');\nstore.setHex('#277D59');\nstore.setHSV({ h: 140 });\nstore.setAlpha(0.5);\nconst unsubscribe = store.subscribe(() => console.log(store.getColor()));\n// unsubscribe() when the consumer is removed.`
+        : `import { createThemeStore, generateTheme } from '${pkg(i)}';\n\nconst store = createThemeStore({\n  theme: generateTheme('#5268E0'),\n  mode: 'system', systemMode: 'light',\n});\nstore.setColor('primary', '#277D59');\nstore.setName('Project theme');\nstore.setBorder('radius', 'card', 0.75);\nstore.setMode('dark');`,
+    { label: "Store updates", file: "store.ts" },
+  );
+  codePanel(
+    document.querySelector("#output-code")!,
+    (i) =>
+      color
+        ? `import { createColorStore } from '${pkg(i)}';\nconst store = createColorStore('#5268E080');\nconst color = store.getColor();\n\ncolor.name;        // nearest name from the bundled list\ncolor.exact;       // true only for an exact named match\ncolor.hex;         // #RRGGBB or #RRGGBBAA\ncolor.rgb;         // { r, g, b, alpha }\ncolor.hsl;         // { h, s, l, alpha }\ncolor.hsv;         // { h, s, v, alpha }\ncolor.oklch;       // { l, c, h, alpha }\ncolor.oklab;       // { l, a, b, alpha }\ncolor.formats;     // strings for all supported formats\nstore.getValue('hsl');`
+        : `import { createThemeStore, generateTheme, themeConfiguration,\n  mergeThemeConfiguration } from '${pkg(i)}';\n\nconst store = createThemeStore({ theme: generateTheme('#5268E0'), mode: 'light' });\nconst config = themeConfiguration(store.getSnapshot(), {\n  roles: ['primary'], radius: ['card'], width: ['button'],\n});\nconfig.theme;         // primary palette and the two selected fields\nconfig.mode;          // resolved light/dark\nconfig.modePreference;// saved system/light/dark preference\nconfig.css;           // selected tokens as CSS declarations\nconfig.tailwind;      // selected Tailwind 4 utilities\nconfig.schemaVersion;// saved configuration format version\nconfig.json;          // the same selected fields as JSON\n\nconst updated = mergeThemeConfiguration(store.getSnapshot().theme, config.json);\nstore.setTheme(updated);`,
+    { label: "Read values", file: "output.ts" },
+  );
+  codePanel(
+    document.querySelector("#custom-code")!,
+    (i) =>
+      color
+        ? `.custom-picker {\n  --cp-thumb-size: 22px;\n  --cp-thumb-radius: 0;\n  --cp-thumb-border: 2px solid white;\n  --cp-track-height: 12px;\n  --cp-track-radius: 0;\n}\n.custom-picker [data-cp-part="thumb-text"] { font-size: 10px; }`
+        : modeExample(i),
+    color
+      ? { label: "Styles", file: "styles.css" }
+      : { label: "Appearance controls", baseName: "AppearanceControls" },
+  );
+  if (!color) {
+    cleanup.push(mountRenderingLab(document.querySelector("#docs-rendering")!));
+    codePanel(
+      document.querySelector("#ssr-code")!,
+      () =>
+        `import { createThemeStore, generateTheme, themeConfiguration } from '@salyra-ui/theme-studio';
+
+// Call once per request with the user's theme and saved mode.
+export function createThemeSeed() {
+  const store = createThemeStore({
+    theme: generateTheme('#5268E0'), mode: 'dark', systemMode: 'dark',
+    modeStorage: false,
+  });
+  const { theme, modePreference: mode, systemMode } = store.getServerSnapshot();
+  return { options: { theme, mode, systemMode },
+    css: themeConfiguration(store.getServerSnapshot()).css };
+}
+
+// Pass seed.options to the server and client provider.
+// Use seed.css as inline declarations for a server-rendered scope.`,
+      { label: "Server seed", file: "theme-seed.ts" },
+    );
+    codePanel(
+      document.querySelector("#cache-code")!,
+      (i) =>
+        `import { createThemeStore, browserStorage, browserModeStorage,\n  generateTheme, createHttpThemeLoader } from '${pkg(i)}';\n\nconst options = {\n  fallbackTheme: generateTheme('#5268E0'),\n  storage: browserStorage('app:theme'),\n  modeStorage: browserModeStorage('app:mode'),\n  loadTheme: createHttpThemeLoader('/api/theme'),\n  revalidateOnFocus: true,\n  revalidateIntervalMs: 60000,\n};\nconst store = createThemeStore(options);\n// Pass options/store to the framework provider.\n// Native DOM consumers call mountThemeStore(store, options.storage, options).`,
+      { label: "Cache configuration", file: "theme-options.ts" },
+    );
+  }
+}
+function installation(host: HTMLElement, kit: Kit) {
+  codePanel(host, () => "", {
+    label: "Installation",
+    files: (i) => [
+      {
+        name: "Terminal",
+        code: `npm install @salyra-ui/${kit}@${releases.current}`,
+      },
+      {
+        name: "Imports",
+        code:
+          i === "Astro"
+            ? `import ${kit === "color-picker" ? "ColorRoot" : "ThemeProvider"} from '${packageFor(kit, i)}/${kit === "color-picker" ? "ColorRoot" : "ThemeProvider"}.astro';`
+            : `import { ${i === "Vanilla" ? (kit === "color-picker" ? "mountColorPicker" : "mountThemeKit") : kit === "color-picker" ? (i === "Angular" ? "ColorRoot, ColorField, ColorRange, createColorStore" : "ColorPicker as Color, createColorStore") : "ThemeProvider, generateTheme"} } from '${packageFor(kit, i)}';`,
+      },
+      {
+        name: i === "Angular" ? "styles.css" : "Global styles",
+        code:
+          i === "Angular"
+            ? `@import '@salyra-ui/${kit}/styles.min.css';`
+            : i === "Vanilla"
+              ? `import '@salyra-ui/${kit}/styles.min.css';\n\n// Readable CSS alternative (use one stylesheet):\n// import '@salyra-ui/${kit}/styles.standard.css';`
+              : `import '@salyra-ui/${kit}/styles.min.css';`,
+      },
+      ...(i === "Vanilla"
+        ? [
+            {
+              name: "Downloaded assets",
+              code: `<link rel="stylesheet" href="/assets/${kit}.css">\n<script src="/assets/${kit}.js"></script>`,
+            },
+            {
+              name: "Downloaded assets (minified)",
+              code: `<link rel="stylesheet" href="/assets/${kit}.min.css">\n<script src="/assets/${kit}.min.js"></script>`,
+            },
+          ]
+        : []),
+    ],
+  });
+}
+
+// Docs are inserted by the client, after the browser's initial fragment lookup.
+if (location.hash)
+  requestAnimationFrame(() => {
+    document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  });
+
+// Product pages expose the same working composition and copyable sources as documentation.
+if (page === "color" || page === "generator") {
+  const kit: Kit = page === "color" ? "color-picker" : "theme-studio";
+  const section = document.createElement("section");
+  section.id = "composition";
+  section.className = "examples-section";
+  section.innerHTML =
+    '<div class="section-heading"><h2>Build your own layout</h2><p>Choose the parts you need. Labels, marker content and spacing belong to your application. Open Code for all six integrations.</p></div><div data-composition-example></div>';
+  document.querySelector("main")!.append(section);
+  cleanup.push(
+    mountCompositionExample(
+      section.querySelector<HTMLElement>("[data-composition-example]")!,
+      kit,
+    ),
+  );
+}
+
+// The docs body is rendered on the client, after the browser's initial anchor lookup.
+requestAnimationFrame(() => {
+  const anchor = window.location.hash.slice(1);
+  if (anchor) document.getElementById(anchor)?.scrollIntoView();
+});
