@@ -120,7 +120,8 @@ if (page === "landing") {
   installation(document.querySelector("#installation")!, kit);
 } else {
   const kit: Kit = ["theme-studio", "theme-kit"].includes(
-    new URLSearchParams(location.search).get("kit") ?? "",
+    new URLSearchParams(location.search).get("kit") ??
+      document.body.dataset.component ?? "",
   )
     ? "theme-studio"
     : "color-picker";

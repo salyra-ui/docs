@@ -13,6 +13,22 @@ for (const slug of pages)
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`/${slug}.html`);
     await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1")).toHaveText(
+      {
+        "color-picker": "Color picker",
+        "theme-studio": "Theme studio",
+        calendar: "Calendar.",
+        "date-picker": "Date Picker.",
+        "time-picker": "Time Picker.",
+        "date-time-picker": "Date Time Picker.",
+      }[slug]!,
+    );
+    if (slug === "theme-studio") {
+      await expect(page.locator("#reference")).toContainText("ThemeProvider");
+      await expect(page.locator("#docs-installation")).toContainText(
+        "@salyra-ui/theme-studio",
+      );
+    }
     await expect(
       page.getByRole("navigation", { name: "Main navigation" }),
     ).toBeVisible();
