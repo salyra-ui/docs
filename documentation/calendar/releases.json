@@ -1,0 +1,12 @@
+{
+  "current": "0.1.0",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "status": "released",
+      "reference": "0.1.0/reference.md",
+      "changelog": "../CHANGELOG.md",
+      "date": "2026-10-04"
+    }
+  ]
+}

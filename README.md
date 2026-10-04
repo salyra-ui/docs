@@ -2,7 +2,7 @@
 
 The documentation and example site for Color Picker, Theme Studio, Calendar, Date Picker, Time Picker and Date Time Picker. Each package has its own page, installation steps and code examples.
 
-Color Picker and Theme Studio document the released 1.0.1 API, with archived documentation for 0.3.0 and 1.0.0. The calendar suite documents the 0.1.0 API. Compiled dependency archives are pinned under vendor/packages so this repository builds independently of the component workspaces. These are build inputs, not the installation instructions shown to users. The documentation uses standard npm installation commands.
+Color Picker and Theme Studio document the released 1.0.1 API, with archived documentation for 0.3.0 and 1.0.0. Calendar, Date Picker, Time Picker and Date Time Picker document the released 0.1.0 API. All six build dependencies use exact npm versions, so this repository builds independently of the component workspaces. The documentation uses standard npm installation commands.
 
 ## Development
 
@@ -29,9 +29,9 @@ The homepage keeps one curated Calendar/Theme composition. The separate componen
 - documentation/releases.json records the released color/theme versions.
 - public/versions preserves previously released documentation assets.
 - public/downloads contains the public browser assets and Calendar browser builds.
-- vendor/packages pins the four Calendar dependencies used to build the site.
+- documentation/calendar/releases.json records the released calendar suite versions.
 
-Update documentation here rather than in each component package. To refresh the calendar example modules and built assets, first build the component workspace, then run `node scripts/sync-calendar.mjs /path/to/salyra-date-picker`. Run npm install after syncing to refresh the pinned dependency builds and their lockfile hashes. The script leaves the component-specific documentation and common navigation alone. Update the catalog and package dependency versions when shipping a release.
+Update documentation here rather than in each component package. To refresh the calendar example modules and built assets, first build the component workspace, then run `node scripts/sync-calendar.mjs /path/to/salyra-date-picker`. Publish that version to npm before running npm install to refresh the dependencies and lockfile. The script updates package versions, browser downloads and reference files, while leaving the component-specific pages and common navigation alone. Update the catalog versions when shipping a release.
 
 ## Planning
 

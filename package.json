@@ -14,10 +14,10 @@
     "@salyra-ui/theme-studio": "1.0.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "@salyra-ui/calendar": "file:vendor/packages/salyra-ui-calendar-0.1.0.tgz",
-    "@salyra-ui/date-picker": "file:vendor/packages/salyra-ui-date-picker-0.1.0.tgz",
-    "@salyra-ui/time-picker": "file:vendor/packages/salyra-ui-time-picker-0.1.0.tgz",
-    "@salyra-ui/date-time-picker": "file:vendor/packages/salyra-ui-date-time-picker-0.1.0.tgz"
+    "@salyra-ui/calendar": "0.1.0",
+    "@salyra-ui/date-picker": "0.1.0",
+    "@salyra-ui/time-picker": "0.1.0",
+    "@salyra-ui/date-time-picker": "0.1.0"
   },
   "devDependencies": {
     "vite": "^6.4.3",

@@ -11,17 +11,14 @@ const { version } = JSON.parse(
 );
 // Update published assets and reusable live example modules. The component docs stay in this repository.
 const slugs = ["calendar", "date-picker", "time-picker", "date-time-picker"];
-const lock = JSON.parse(await readFile("package-lock.json", "utf8"));
+const manifest = JSON.parse(await readFile("package.json", "utf8"));
 for (const slug of slugs) {
-  const name = `salyra-ui-${slug}-${version}.tgz`;
-  await cp(join(root, `release/${slug}/${name}`), `vendor/packages/${name}`);
   await cp(join(root, `public/downloads/${slug}`), `public/downloads/${slug}`, {
     recursive: true,
   });
-  // npm otherwise reuses the old archive integrity when a build keeps its version.
-  delete lock.packages[`node_modules/@salyra-ui/${slug}`];
+  manifest.dependencies[`@salyra-ui/${slug}`] = version;
 }
-await writeFile("package-lock.json", JSON.stringify(lock, null, 2) + "\n");
+await writeFile("package.json", JSON.stringify(manifest, null, 2) + "\n");
 for (const name of [
   "interval-picker.ts",
   "historical-calendar.ts",
@@ -41,6 +38,10 @@ await cp(
   { recursive: true },
 );
 await cp(join(root, "CHANGELOG.md"), "documentation/date-changelog.md");
+await cp(
+  join(root, "documentation/releases.json"),
+  "documentation/calendar/releases.json",
+);
 console.log(
-  `Synced calendar suite ${version}. Run npm install to refresh the build dependencies. Update catalog/package versions when the version changes.`,
+  `Synced calendar suite ${version}. Publish this version to npm before running npm install. Update catalog versions when the version changes.`,
 );
