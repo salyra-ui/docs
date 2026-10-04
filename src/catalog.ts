@@ -1,5 +1,10 @@
 export const categories = [
   {
+    id: "files",
+    name: "Files",
+    description: "File selection, upload queues and transfer controls.",
+  },
+  {
     id: "color",
     name: "Color & themes",
     description: "Choose colors and configure an application's appearance.",
@@ -23,6 +28,16 @@ interface ComponentDefinition {
 }
 
 export const components = [
+  {
+    slug: "file-uploader",
+    name: "File Uploader",
+    version: "0.1.0",
+    category: "files",
+    keywords: "file upload chunk resume retry dropzone progress attachment",
+    description:
+      "Composable file uploads with verified resume and custom previews.",
+    examples: "upload-examples.html",
+  },
   {
     slug: "color-picker",
     name: "Color Picker",
@@ -80,7 +95,10 @@ export const components = [
   },
 ] as const satisfies readonly ComponentDefinition[];
 export type ComponentSlug = (typeof components)[number]["slug"];
-export const base = import.meta.env.BASE_URL;
+export const base =
+  (typeof document !== "undefined"
+    ? document.body.dataset.siteRoot
+    : undefined) ?? import.meta.env.BASE_URL;
 export function componentURL(slug: string) {
   return `${base}${slug}.html`;
 }

@@ -49,4 +49,4 @@ async function rewrite(folder) {
 }
 await rewrite("dist");
 await writeFile("dist/.nojekyll", "");
-console.log(`Built Salyra UI documentation for six components (base ${base}).`);
+console.log(`Built Salyra UI documentation for the component library (base ${base}).`);

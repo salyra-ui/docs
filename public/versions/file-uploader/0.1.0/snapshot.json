@@ -1,0 +1,10 @@
+{
+  "version": "0.1.0",
+  "protocol": "salyra-upload/1",
+  "pages": [
+    "file-uploader.html",
+    "upload-server.html",
+    "upload-examples.html",
+    "upload-changelog.html"
+  ]
+}

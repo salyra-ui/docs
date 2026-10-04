@@ -37,7 +37,7 @@ for (const slug of pages)
       .getByRole("link", { name: "Components", exact: true })
       .click();
     await expect(page).toHaveURL(/components\.html$/);
-    await expect(page.locator("[data-component-card]")).toHaveCount(6);
+    await expect(page.locator("[data-component-card]")).toHaveCount(7);
     expect(errors).toEqual([]);
   });
 test("date package snippets follow the component instead of always using DateTimePicker", async ({
@@ -193,7 +193,7 @@ test("homepage has one composition whose selection survives theme changes", asyn
   await page
     .getByRole("link", { name: "Explore components", exact: true })
     .click();
-  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(7);
 });
 
 test("component installation uses npm package names and contains no archive or preview instructions", async ({
@@ -234,7 +234,7 @@ test("homepage composition and component catalog fit a phone", async ({
   }
   await page.getByRole("button", { name: "Color & themes" }).click();
   await page.getByRole("button", { name: "Reset filters" }).click();
-  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(7);
 });
 
 test("component search combines categories and features and preserves shared URLs", async ({
@@ -242,7 +242,7 @@ test("component search combines categories and features and preserves shared URL
 }) => {
   await page.goto("/components.html");
   const cards = page.locator("[data-component-card]:visible");
-  await expect(cards).toHaveCount(6);
+  await expect(cards).toHaveCount(7);
   await page.getByRole("button", { name: "Dates & time" }).click();
   await expect(cards).toHaveCount(4);
   await expect(page).toHaveURL(/category=date-time/);
@@ -271,7 +271,7 @@ test("component search combines categories and features and preserves shared URL
     page.getByRole("button", { name: "Dates & time" }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Reset filters" }).click();
-  await expect(cards).toHaveCount(6);
+  await expect(cards).toHaveCount(7);
   await expect(page).toHaveURL(/components\.html$/);
 });
 
@@ -294,7 +294,7 @@ test("empty search is safe and its reset restores the catalog", async ({
   await expect(page.locator("[onload]")).toHaveCount(0);
   await page.getByRole("button", { name: "Show all components" }).click();
   await expect(search).toBeFocused();
-  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(7);
   await search.fill("OKLCH");
   await expect(page.locator("[data-component-card]:visible")).toHaveCount(1);
   await expect(
@@ -302,7 +302,7 @@ test("empty search is safe and its reset restores the catalog", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Clear search" }).click();
   await expect(search).toBeFocused();
-  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(7);
   expect(errors).toEqual([]);
 });
 
