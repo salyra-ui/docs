@@ -11,6 +11,7 @@
   },
   "include": [
     "src/catalog.ts",
+    "src/home.ts",
     "src/shell.ts",
     "src/color-theme/**/*.ts",
     "src/date/**/*.ts",

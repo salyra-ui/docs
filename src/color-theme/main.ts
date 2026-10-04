@@ -1,4 +1,4 @@
-import { siteHeader, siteFooter, catalogMarkup } from "../shell";
+import { siteHeader, siteFooter } from "../shell";
 import releases from "../../documentation/releases.json";
 import { changelogContent } from "./changelog";
 import "./changelog.css";
@@ -10,17 +10,7 @@ import { mountWorkflowGallery } from "./workflow-gallery";
 import "@salyra-ui/color-picker/styles.css";
 import "@salyra-ui/theme-studio/styles.css";
 import "./site.css";
-import {
-  createColorStore,
-  type ColorProviderElement,
-} from "@salyra-ui/color-picker/vanilla";
-import {
-  integrations,
-  colorMarkup,
-  modeExample,
-  packageFor,
-  type Kit,
-} from "./snippets";
+import { integrations, modeExample, packageFor, type Kit } from "./snippets";
 import { referenceTable, mountReference } from "./reference";
 import { mountExplorer, mountRenderingLab, codePanel, escape } from "./gallery";
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -44,7 +34,6 @@ const link = (file: string) => {
   }
   return `${base}${file}`;
 };
-const brand = `<a class="brand" href="${link("site.html")}" aria-label="Salyra UI home">salyra<span>/</span>ui<span class="brand-dot" aria-hidden="true"></span></a>`;
 const nav = siteHeader(
   document.body.dataset.component ??
     (page === "color"
@@ -58,43 +47,7 @@ const cleanup: (() => void)[] = [];
 window.addEventListener("pagehide", (event) => {
   if (!event.persisted) cleanup.forEach((fn) => fn());
 });
-if (page === "landing") {
-  app.innerHTML = `${nav}<main id="main"><section class="landing-hero"><div class="hero-copy"><p class="product-label">Salyra UI</p><h1>Color.<br>With controls.</h1><p class="lead">Components in harmony with your stack. Use a ready-made editor or build your own with context roots, native inputs and custom markers.</p><div class="actions"><a class="button solid" href="${link("color.html")}">Explore color picker</a><a class="button" href="${link("generator.html")}">Explore theme studio</a></div></div><div class="hero-component"><div class="preview-label">Color picker <span>Interactive</span></div><div id="hero-picker"></div><div class="hero-color-result"><span id="hero-swatch"></span><div><strong id="hero-name"></strong><code id="hero-value"></code></div></div></div></section><div class="framework-strip"><span>Framework adapters</span>${integrations.map((i) => `<span>${i}</span>`).join("")}</div><section class="product-section"><div class="section-number">01</div><div><h2>Pick a color.</h2><p>Choose a rectangle or a wheel, enter channel values and adjust opacity. Every change gives you the color name and values in all six formats.</p><a class="text-link" href="${link("color.html")}">View color picker examples</a></div><div class="format-index"><span>HEX</span><span>RGB</span><span>HSL</span><span>HSV</span><span>OKLCH</span><span>OKLab</span></div></section><section class="product-section"><div class="section-number">02</div><div><h2>Build a theme.</h2><p>Start with primary, then add secondary and accent if you need them. Choose the radius, borders and backgrounds your editor will control.</p><a class="text-link" href="${link("generator.html")}">View theme studio examples</a></div><div class="role-index"><span>Primary</span><span>Secondary</span><span>Accent</span></div></section><section class="landing-examples"><div class="section-heading"><h2>See the component.<br>Use the code.</h2><p>Try an example, choose your framework and copy its code.</p></div><div id="landing-explorer"></div></section><section id="composition" class="landing-examples"><div class="section-heading"><h2>Your markup.<br>Shared color state.</h2><p>Root connects the controls. You choose the labels, layout, marker and classes. This editor uses the v1 primitives without the default picker stylesheet.</p></div><div id="composition-example"></div><p><a class="text-link" href="${link("docs.html?kit=color-picker#composition")}">See the composition API</a></p></section><section class="feature-grid"><article><h3>Forms, history &amp; saved colors</h3><p>Submit colors with opacity, undo changes and keep recent or favorite colors. Use the same color store across your controls.</p><a class="text-link" href="${link("color.html#workflows")}">Try the color workflows</a></article><article><h3>Edit, then apply</h3><p>Keep a separate draft, undo edits and lock colors during generation. Apply commits your changes. Cancel restores the current theme.</p><a class="text-link" href="${link("generator.html#workflows")}">Try the theme workflows</a></article><article><h3>Predictable rendering</h3><p>Pass a theme to render it immediately. If you load it from an API, choose what appears while loading and which theme to use if the request fails.</p><a class="text-link" href="${link("generator.html#rendering")}">Try the rendering examples</a></article></section></main>${footer}`;
-  document
-    .querySelector(".framework-strip")!
-    .insertAdjacentHTML("afterend", catalogMarkup());
-  const host = document.querySelector("#hero-picker")!;
-  host.innerHTML = colorMarkup("rectangle");
-  const store = createColorStore("#5268E0");
-  const provider = host.querySelector<ColorProviderElement>("cp-provider")!;
-  provider.setStore(store);
-  // A deliberately small composition: surface, hue and channel fields only.
-  provider.querySelector('cp-slider[channel="alpha"]')!.remove();
-  provider.querySelector("cp-alpha-input")!.remove();
-  provider.querySelector("cp-mode")!.remove();
-  const update = () => {
-    const color = store.getColor();
-    document.querySelector<HTMLElement>("#hero-swatch")!.style.background =
-      color.hex;
-    document.querySelector("#hero-name")!.textContent = color.name;
-    document.querySelector("#hero-value")!.textContent = color.hex;
-  };
-  provider.addEventListener("color-change", update);
-  update();
-  cleanup.push(
-    mountExplorer(
-      document.querySelector("#landing-explorer")!,
-      "color-picker",
-      "wheel",
-    ),
-  );
-  cleanup.push(
-    mountCompositionExample(
-      document.querySelector("#composition-example")!,
-      "color-picker",
-    ),
-  );
-} else if (page === "changelog") {
+if (page === "changelog") {
   const kit: Kit =
     (new URLSearchParams(location.search).get("kit") ??
       document.body.dataset.component) === "theme-studio"
@@ -121,7 +74,8 @@ if (page === "landing") {
 } else {
   const kit: Kit = ["theme-studio", "theme-kit"].includes(
     new URLSearchParams(location.search).get("kit") ??
-      document.body.dataset.component ?? "",
+      document.body.dataset.component ??
+      "",
   )
     ? "theme-studio"
     : "color-picker";

@@ -1,4 +1,4 @@
-import { cp, readFile, mkdir } from "node:fs/promises";
+import { cp, readFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 const source = process.argv[2];
 if (!source)
@@ -11,14 +11,17 @@ const { version } = JSON.parse(
 );
 // Update published assets and reusable live example modules. The component docs stay in this repository.
 const slugs = ["calendar", "date-picker", "time-picker", "date-time-picker"];
+const lock = JSON.parse(await readFile("package-lock.json", "utf8"));
 for (const slug of slugs) {
   const name = `salyra-ui-${slug}-${version}.tgz`;
   await cp(join(root, `release/${slug}/${name}`), `vendor/packages/${name}`);
-  await cp(join(root, `public/downloads/${name}`), `public/downloads/${name}`);
   await cp(join(root, `public/downloads/${slug}`), `public/downloads/${slug}`, {
     recursive: true,
   });
+  // npm otherwise reuses the old archive integrity when a build keeps its version.
+  delete lock.packages[`node_modules/@salyra-ui/${slug}`];
 }
+await writeFile("package-lock.json", JSON.stringify(lock, null, 2) + "\n");
 for (const name of [
   "interval-picker.ts",
   "historical-calendar.ts",
@@ -39,5 +42,5 @@ await cp(
 );
 await cp(join(root, "CHANGELOG.md"), "documentation/date-changelog.md");
 console.log(
-  `Synced calendar suite ${version}. Update catalog/package versions and run npm install if the version changed.`,
+  `Synced calendar suite ${version}. Run npm install to refresh the build dependencies. Update catalog/package versions when the version changes.`,
 );

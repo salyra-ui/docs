@@ -145,3 +145,106 @@ test("six-component navigation and documentation fit a phone viewport", async ({
     ).toBe(true);
   }
 });
+
+test("homepage introduces the component library and preserves live demo state", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("h1")).toHaveText("Components.On your terms.");
+  await expect(page.locator("#components article")).toHaveCount(6);
+  const calendar = page.locator("#demo-calendar");
+  await expect(calendar.locator("[data-calendar] table")).toBeVisible();
+  await calendar.locator('[data-day-trigger][data-date="2026-10-14"]').click();
+  const selection = await calendar.locator("output").innerText();
+  await page.getByRole("tab", { name: "Color Picker", exact: true }).click();
+  const hex = page.getByLabel("Color HEX");
+  await expect(hex).toBeVisible();
+  await hex.fill("#277D59");
+  await hex.dispatchEvent("change");
+  await page.getByRole("tab", { name: "Theme Studio", exact: true }).click();
+  const sample = page.locator(".home-theme-sample");
+  await expect(sample).toBeVisible();
+  const initial = await sample.evaluate(
+    (el) => getComputedStyle(el).backgroundColor,
+  );
+  await page.getByRole("button", { name: "Dark", exact: true }).click();
+  await expect
+    .poll(() => sample.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .not.toBe(initial);
+  const name = await page.locator("[data-theme-name]").innerText();
+  await page.getByRole("button", { name: "Green theme" }).click();
+  await expect(page.locator("[data-theme-name]")).not.toHaveText(name);
+  await page.getByRole("tab", { name: "Calendar", exact: true }).click();
+  await expect(calendar.locator("output")).toHaveText(selection);
+  await page.getByRole("tab", { name: "Color Picker", exact: true }).click();
+  await expect(hex).toHaveValue("#277D59");
+});
+
+test("component installation uses npm package names and contains no archive or preview instructions", async ({
+  page,
+}) => {
+  for (const slug of pages.slice(2)) {
+    await page.goto(`/${slug}.html`);
+    await expect(page.locator("#setup")).toContainText(
+      `npm install @salyra-ui/${slug}`,
+    );
+    await expect(page.locator("#setup")).not.toContainText(".tgz");
+    await expect(page.locator("main")).not.toContainText("Development preview");
+    await expect(page.locator("main")).not.toContainText("not published");
+  }
+  await page.goto("/");
+  for (const slug of pages) {
+    await page.getByLabel("Package", { exact: true }).selectOption(slug);
+    await expect(page.locator("#install-command")).toHaveText(
+      `npm install @salyra-ui/${slug}`,
+    );
+    await expect(page.locator("#install-docs")).toHaveAttribute(
+      "href",
+      `/${slug}.html#${["color-picker", "theme-studio"].includes(slug) ? "installation" : "setup"}`,
+    );
+  }
+});
+
+test("homepage demos and installation fit on a phone with keyboard navigation", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const calendarTab = page.getByRole("tab", { name: "Calendar", exact: true });
+  await calendarTab.focus();
+  await calendarTab.press("ArrowRight");
+  await expect(
+    page.getByRole("tab", { name: "Color Picker", exact: true }),
+  ).toBeFocused();
+  await expect(page.getByLabel("Color HEX")).toBeVisible();
+  for (const name of ["Color Picker", "Theme Studio", "Calendar"]) {
+    await page.getByRole("tab", { name, exact: true }).click();
+    await expect(
+      page.locator(`[role="tabpanel"]:visible [aria-busy]`),
+    ).toHaveAttribute("aria-busy", "false");
+    expect(
+      await page
+        .locator(`[role="tabpanel"]:visible [data-demo-host]`)
+        .evaluate((host) => {
+          const bounds = host.getBoundingClientRect();
+          return [...host.children].every((child) => {
+            const rect = child.getBoundingClientRect();
+            return rect.top >= bounds.top && rect.bottom <= bounds.bottom;
+          });
+        }),
+    ).toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page
+    .getByLabel("Package", { exact: true })
+    .selectOption("date-time-picker");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
