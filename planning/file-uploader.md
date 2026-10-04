@@ -151,20 +151,31 @@ Istoricul local este un cache opțional. Aplicația poate reîncărca lista de p
 
 ## Adaptoare de server
 
-Adăugăm o familie separată de integrări backend pentru TypeScript, Go, Rust, Elixir, C și C++. Ele implementează același protocol HTTP și trec aceeași suită de compatibilitate. Framework-ul frontend nu determină limbajul serverului.
+Adăugăm o familie separată de integrări backend pentru TypeScript/JavaScript, Go, Rust, Java, Kotlin, Scala, C#/.NET, Python, PHP, Ruby, Elixir, C și C++. Ele implementează același protocol HTTP și trec aceeași suită de compatibilitate. Framework-ul frontend nu determină limbajul serverului.
 
 Codul backend are distribuție proprie, prin ecosistemul fiecărui limbaj. El nu intră în bundle-ul browserului. Pentru TypeScript, propunerea este un pachet separat `@salyra-ui/upload-server`. Numele pachetelor din celelalte registre se aleg înainte de publicare.
 
 | Limbaj | Integrare propusă | Distribuție |
 | --- | --- | --- |
-| TypeScript | Engine pentru sesiuni și handler Node HTTP, cu adaptoare pentru framework-uri adăugate separat. | npm |
+| TypeScript / JavaScript | Engine pentru sesiuni și handler Node HTTP, cu declarații TypeScript și adaptoare pentru framework-uri adăugate separat. | npm |
 | Go | Handler compatibil cu net/http și interfețe pentru stocare și hooks. | Go module |
 | Rust | Engine cu traits pentru stocare și integrare HTTP separată de logică. | Cargo crate |
+| Java | Bibliotecă JVM pentru sesiuni, streaming și hooks. Integrarea HTTP rămâne separată de engine. | Maven Central |
+| Kotlin | API Kotlin peste engine-ul JVM comun, cu integrare pentru coroutines unde este necesară. | Maven Central |
+| Scala | API Scala peste engine-ul JVM comun, cu integrare async separată. | Maven Central |
+| C# / .NET | Bibliotecă pentru sesiuni și stocare, cu integrare ASP.NET Core și operații anulabile. | NuGet |
+| Python | Engine și interfețe de stocare, cu integrarea HTTP și streaming definite separat. | PyPI |
+| PHP | Bibliotecă pentru sesiuni, chunks și hooks, integrabilă în aplicația sau framework-ul ales. | Composer / Packagist |
+| Ruby | Engine pentru sesiuni și integrare HTTP separată, cu hooks și stocare configurabilă. | RubyGems |
 | Elixir | Integrare Plug, reutilizabilă în aplicații Phoenix, cu module de stocare configurabile. | Hex package |
 | C | API explicit de sesiuni, streaming și callbacks, cu ownership și cleanup documentate. Integrarea HTTP este separată. | Bibliotecă și build CMake |
 | C++ | Wrapper cu ownership automat peste motorul comun C, dacă evaluarea confirmă că păstrează integrarea simplă. | Bibliotecă și build CMake |
 
 Aceste integrări sunt propuneri. Evaluăm separat costul de mentenanță al fiecăreia. C și C++ nu primesc câte o implementare diferită a aceleiași logici dacă o bază comună este potrivită.
+
+Java, Kotlin și Scala reutilizează un engine JVM comun. Verificăm API-urile fiecărui limbaj și modelul său de concurență fără să duplicăm protocolul, persistența și regulile de reluare. TypeScript și JavaScript folosesc aceeași distribuție runtime, cu tipuri disponibile pentru TypeScript.
+
+În documentație, aceste limbaje apar în secțiunea de integrare backend. Selectorul pentru componentele UI rămâne React, Svelte, Vue, Angular, Astro și Vanilla. Suportul pentru un limbaj nu implică automat adaptoare pentru toate framework-urile sale HTTP. Fiecare integrare concretă este documentată și testată separat.
 
 ### Contractul comun
 
@@ -203,7 +214,7 @@ Serverul poate confirma progresul și reluarea fără să impună autentificarea
 
 Aceeași suită de teste rulează împotriva fiecărui adaptor backend. Include chunks repetate, chunks în ordine diferită când sunt suportate, checksum greșit, timeout după salvare, refresh, expirare, finalizare repetată, cancel și restart-ul serverului. Versiunea de protocol și capabilitățile sunt publicate explicit de fiecare adaptor.
 
-Ordinea propusă este TypeScript pentru integrarea de referință, apoi Go și Rust. Elixir urmează același contract. C și C++ vin după stabilizarea lui, cu verificări dedicate pentru memorie și lifecycle. Nu anunțăm un adaptor ca suportat înainte ca implementarea și testele sale să existe.
+Ordinea propusă este TypeScript pentru integrarea de referință, apoi Go, Rust și Java. Urmează C#/.NET, Python și PHP. Kotlin și Scala se construiesc peste engine-ul JVM, iar Elixir și Ruby urmează același contract HTTP. C și C++ vin după stabilizarea lui, cu verificări dedicate pentru memorie și lifecycle. Nu anunțăm un adaptor ca suportat înainte ca implementarea și testele sale să existe.
 
 ## Optimizare și SSR
 
