@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 const pages = [
   "index",
   "docs",
+  "components",
   "color-picker",
   "theme-studio",
   "calendar",

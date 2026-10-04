@@ -1,48 +1,4 @@
-:root {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: #181818;
-  background: #fff;
-  font-synthesis: none;
-  font-size: 15px;
-  line-height: 1.5;
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-}
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 24px;
-}
-a {
-  color: inherit;
-  text-decoration: none;
-}
-a:hover {
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-button,
-input,
-select {
-  font: inherit;
-  color: inherit;
-}
-button {
-  cursor: pointer;
-}
-button,
-a,
-input,
-select,
-summary {
-  outline-offset: 4px;
-}
-[hidden] {
-  display: none !important;
-}
+@import "./base.css";
 .home-main {
   max-width: 1320px;
   margin: 0 auto;
@@ -97,40 +53,31 @@ summary {
   color: #626262;
   margin: 24px 0 0;
 }
-.home-demo {
+.home-showcase {
   border: 1px solid #dddde2;
   min-width: 0;
 }
-.home-demo-tabs {
+.home-showcase > header {
   display: flex;
-  border-bottom: 1px solid #dddde2;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
   background: #f7f7f8;
+  border-bottom: 1px solid #dddde2;
+  font-size: 11px;
 }
-.home-demo-tabs button {
-  flex: 1;
-  border: 0;
-  border-right: 1px solid #dddde2;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  padding: 16px 8px;
-  font-size: 12px;
+.home-showcase > header > span:last-child {
+  color: #626262;
 }
-.home-demo-tabs button:last-child {
-  border-right: 0;
-}
-.home-demo-tabs button[aria-selected="true"] {
-  background: white;
-  border-bottom-color: #e4002b;
-}
-.home-demo-content {
-  height: 460px;
+#home-showcase {
+  min-height: 480px;
   padding: 24px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
 }
-.home-demo-caption {
+#home-showcase[aria-busy="true"] {
+  display: grid;
+  align-items: center;
+}
+.home-showcase-caption {
   padding: 14px 24px;
   border-top: 1px solid #dddde2;
   display: flex;
@@ -138,12 +85,114 @@ summary {
   gap: 16px;
   font-size: 11px;
 }
-.home-demo-caption > span {
+.home-showcase-caption > span {
   color: #626262;
 }
-.home-demo-caption a {
+.home-showcase-caption a {
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+.showcase-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.showcase-controls fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 8px;
+}
+.showcase-controls legend {
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.showcase-controls [data-theme-color] {
+  width: 24px;
+  height: 24px;
+  background: var(--choice);
+  border: 3px solid white;
+  outline: 1px solid #dddde2;
+}
+.showcase-controls [data-theme-color][aria-pressed="true"] {
+  outline-color: #181818;
+}
+.showcase-controls [data-theme-mode] {
+  border: 1px solid #dddde2;
+  padding: 8px 10px;
+  font-size: 11px;
+  background: white;
+}
+.showcase-controls [data-theme-mode][aria-pressed="true"] {
+  color: white;
+  background: #181818;
+}
+.showcase-scope {
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  padding: 20px;
+  border: 1px solid #dddde2;
+}
+.showcase-calendar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  margin-bottom: 20px;
+}
+.showcase-calendar-heading > div {
+  display: flex;
+  gap: 4px;
+}
+.showcase-calendar-heading button {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+  padding: 6px;
+  width: 28px;
+  height: 28px;
+}
+.showcase-calendar-heading svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.showcase-scope .sp-calendar {
+  --sp-accent: hsl(var(--primary));
+  --sp-selected-text: hsl(var(--primary-foreground));
+  --sp-range: hsl(var(--primary) / 0.12);
+  --sp-border: hsl(var(--foreground) / 0.2);
+  --sp-outside: hsl(var(--foreground) / 0.5);
+  color: inherit;
+}
+.showcase-scope .sp-grid th {
+  color: hsl(var(--foreground) / 0.6);
+}
+.showcase-scope .sp-month h3 {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.6px;
+}
+.showcase-selection {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  border-top: 1px solid hsl(var(--foreground) / 0.15);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+.showcase-selection > span {
+  opacity: 0.6;
+}
+.showcase-selection output {
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 .home-frameworks {
   display: flex;
@@ -165,27 +214,8 @@ summary {
   gap: 30px;
   flex-wrap: wrap;
 }
-.home-main .salyra-catalog {
-  padding: 64px 0 80px;
-}
-.home-main .salyra-catalog-heading h2 {
-  font-size: 36px;
-  font-weight: 500;
-  letter-spacing: -1.6px;
-}
-.home-main .salyra-catalog-grid article {
-  transition: background 140ms;
-}
-.home-main .salyra-catalog-grid article:hover {
-  background: #f7f7f8;
-}
-.home-section-title {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
 .home-section-title h2,
-.home-install h2 {
+.home-discover h2 {
   font-size: 36px;
   line-height: 1.14;
   letter-spacing: -1.6px;
@@ -193,8 +223,7 @@ summary {
   margin: 0;
 }
 .home-principles {
-  border-top: 1px solid #dddde2;
-  padding: 56px 0 72px;
+  padding: 64px 0 72px;
 }
 .home-principle-grid {
   display: grid;
@@ -214,285 +243,42 @@ summary {
   font-size: 13px;
   line-height: 1.75;
 }
-.home-principle-grid a {
+.home-principle-grid a,
+.home-text-link {
   font-size: 12px;
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-.home-install {
+.home-discover {
   border-top: 1px solid #dddde2;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 64px;
   padding: 56px 0 80px;
 }
-.home-install p:not(.home-label) {
+.home-discover p:not(.home-label) {
   font-size: 13px;
   color: #626262;
-  max-width: 340px;
+  max-width: 360px;
   line-height: 1.7;
   margin: 24px 0 0;
 }
-.home-install-code {
-  padding: 24px;
-  background: #f7f7f8;
-  border: 1px solid #dddde2;
-}
-.home-install-code label {
-  font-size: 12px;
-  display: block;
-  margin-bottom: 8px;
-}
-.home-install-code select {
-  padding: 10px;
-  background: white;
-  border: 1px solid #dddde2;
-  width: 100%;
-  font-size: 13px;
-}
-.home-command {
+.home-discover-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 24px 0;
-}
-.home-command code {
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-.home-command button {
-  font-size: 11px;
-  background: white;
-  border: 1px solid #dddde2;
-  padding: 8px 12px;
-}
-.home-install-footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 11px;
-  min-height: 18px;
-}
-.home-install-footer a {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.home-color-editor {
-  display: grid;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   gap: 24px;
-  grid-template-columns: minmax(140px, 1fr) minmax(110px, 0.85fr);
-  align-items: center;
-}
-.home-color-wheel {
-  width: 100%;
-}
-.home-color-wheel [data-cp-part="thumb"] {
-  width: 16px;
-  height: 16px;
-  border: 2px solid white;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px #181818;
-}
-.home-color-fields {
-  display: grid;
-  gap: 18px;
-}
-.home-color-fields label {
-  font-size: 11px;
-  display: grid;
-  gap: 8px;
-}
-.home-color-fields input {
-  min-width: 0;
-  width: 100%;
-}
-.home-color-fields input:not([type="range"]) {
-  padding: 10px;
-  border: 1px solid #dddde2;
-  background: #fff;
-  font-size: 12px;
-}
-.home-color-fields input[aria-invalid="true"] {
-  outline: 2px solid #e4002b;
-}
-.home-color-fields input[type="range"] {
-  accent-color: #e4002b;
-}
-.home-color-value {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-}
-.home-color-value > span {
-  width: 14px;
-  height: 14px;
-  flex: none;
-  border: 1px solid #dddde2;
-}
-.home-theme-tools {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-.home-theme-tools fieldset {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  gap: 8px;
-}
-.home-theme-tools legend {
-  font-size: 11px;
-  margin-bottom: 8px;
-}
-.home-theme-tools [data-theme-color] {
-  width: 24px;
-  height: 24px;
-  background: var(--choice);
-  border: 3px solid white;
-  outline: 1px solid #dddde2;
-}
-.home-theme-tools [data-theme-color][aria-pressed="true"] {
-  outline-color: #181818;
-}
-.home-theme-tools [data-theme-mode] {
-  border: 1px solid #dddde2;
-  padding: 8px 10px;
-  font-size: 11px;
-  background: white;
-}
-.home-theme-tools [data-theme-mode][aria-pressed="true"] {
-  color: white;
-  background: #181818;
-}
-.home-theme-sample {
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--border-radius-card, 8px);
-  padding: 24px;
-}
-.home-sample-heading {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  opacity: 0.7;
-  margin-bottom: 22px;
-  gap: 12px;
-}
-.home-theme-sample h3 {
-  font-size: 24px;
-  margin: 0 0 10px;
-  font-weight: 500;
-  letter-spacing: -0.8px;
-}
-.home-theme-sample p {
-  font-size: 12px;
-  opacity: 0.7;
-  margin: 0 0 20px;
-}
-.home-theme-sample label {
-  display: grid;
-  gap: 8px;
-  font-size: 11px;
-}
-.home-theme-sample input {
-  background: transparent;
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--border-radius-input, 4px);
-  padding: 10px;
-  width: 100%;
-  min-width: 0;
-  font-size: 12px;
-}
-.home-theme-primary {
-  display: inline-block;
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  border: 0;
-  border-radius: var(--border-radius-button, 4px);
-  padding: 10px 16px;
-  font-size: 12px;
-  margin-top: 20px;
-}
-.home-calendar-tools {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  font-size: 11px;
-}
-.home-calendar-tools > div {
-  display: flex;
-  gap: 4px;
-}
-.home-calendar-tools button {
-  background: #fff;
-  border: 1px solid #dddde2;
-  padding: 6px;
-  width: 28px;
-  height: 28px;
-}
-.home-calendar-tools svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-}
-.home-demo-content .sp-calendar {
-  border: 0;
-  padding: 0;
-  width: 100%;
-  max-width: none;
-}
-.home-demo-content .sp-grid {
-  width: 100%;
-}
-.home-demo-content .sp-month h3 {
-  font-weight: 500;
-  font-size: 20px;
-  margin: 0 0 14px;
-  letter-spacing: -0.5px;
-}
-.home-date-value {
-  display: block;
-  font-size: 11px;
-  margin-top: 16px;
-  border-top: 1px solid #dddde2;
-  padding-top: 16px;
-  min-height: 34px;
-}
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  .home-main .salyra-catalog-grid article {
-    transition: none;
-  }
 }
 @media (max-width: 1000px) {
   .home-hero {
     gap: 32px;
   }
-  .home-demo-content {
-    padding: 20px;
+  #home-showcase {
+    padding: 18px;
   }
-  .home-color-editor {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .home-color-wheel {
-    max-width: 200px;
-    margin: auto;
-  }
-  .home-color-fields {
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+  .showcase-scope {
+    padding: 16px;
   }
   .home-frameworks ul {
     gap: 20px;
@@ -510,8 +296,8 @@ summary {
   .home-lead {
     font-size: 16px;
   }
-  .home-demo {
-    max-width: 520px;
+  .home-showcase {
+    max-width: 540px;
     width: 100%;
   }
   .home-frameworks {
@@ -525,41 +311,35 @@ summary {
     grid-template-columns: 1fr;
     gap: 32px;
   }
-  .home-install {
+  .home-discover {
     grid-template-columns: 1fr;
     gap: 32px;
-  }
-  .home-color-editor {
-    grid-template-columns: 1fr 1fr;
-  }
-  .home-color-fields {
-    grid-template-columns: 1fr;
   }
 }
 @media (max-width: 420px) {
   .home-intro h1 {
     font-size: 46px;
   }
-  .home-demo-content {
-    height: 460px;
-    padding: 18px;
+  #home-showcase {
+    padding: 16px;
   }
-  .home-color-editor {
-    grid-template-columns: 1fr;
-    gap: 22px;
+  .home-showcase > header,
+  .home-showcase-caption {
+    padding: 14px 16px;
   }
-  .home-color-wheel {
-    max-width: 180px;
-  }
-  .home-color-fields {
-    grid-template-columns: 1fr 1fr;
-  }
-  .home-theme-sample {
-    padding: 20px;
+  .home-showcase-caption {
+    flex-direction: column;
+    gap: 8px;
   }
   .home-section-title h2,
-  .home-install h2,
-  .home-main .salyra-catalog-heading h2 {
+  .home-discover h2 {
     font-size: 30px;
+  }
+  .showcase-scope {
+    padding: 12px;
+  }
+  .showcase-scope .sp-grid [data-day-trigger] {
+    width: 30px;
+    height: 34px;
   }
 }

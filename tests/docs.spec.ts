@@ -32,8 +32,12 @@ for (const slug of pages)
     await expect(
       page.getByRole("navigation", { name: "Main navigation" }),
     ).toBeVisible();
-    await page.getByText("Components", { exact: true }).click();
-    await expect(page.locator(".salyra-component-menu a")).toHaveCount(6);
+    await page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("link", { name: "Components", exact: true })
+      .click();
+    await expect(page).toHaveURL(/components\.html$/);
+    await expect(page.locator("[data-component-card]")).toHaveCount(6);
     expect(errors).toEqual([]);
   });
 test("date package snippets follow the component instead of always using DateTimePicker", async ({
@@ -146,38 +150,50 @@ test("six-component navigation and documentation fit a phone viewport", async ({
   }
 });
 
-test("homepage introduces the component library and preserves live demo state", async ({
+test("homepage has one composition whose selection survives theme changes", async ({
   page,
 }) => {
   await page.goto("/");
   await expect(page.locator("h1")).toHaveText("Components.On your terms.");
-  await expect(page.locator("#components article")).toHaveCount(6);
-  const calendar = page.locator("#demo-calendar");
-  await expect(calendar.locator("[data-calendar] table")).toBeVisible();
-  await calendar.locator('[data-day-trigger][data-date="2026-10-14"]').click();
-  const selection = await calendar.locator("output").innerText();
-  await page.getByRole("tab", { name: "Color Picker", exact: true }).click();
-  const hex = page.getByLabel("Color HEX");
-  await expect(hex).toBeVisible();
-  await hex.fill("#277D59");
-  await hex.dispatchEvent("change");
-  await page.getByRole("tab", { name: "Theme Studio", exact: true }).click();
-  const sample = page.locator(".home-theme-sample");
-  await expect(sample).toBeVisible();
-  const initial = await sample.evaluate(
+  await expect(
+    page.locator("[data-component-card], [data-demo], #install-package"),
+  ).toHaveCount(0);
+  const showcase = page.locator("#home-showcase");
+  await expect(showcase).toHaveAttribute("aria-busy", "false");
+  await showcase.locator('[data-day-trigger][data-date="2026-10-14"]').click();
+  await showcase.locator('[data-day-trigger][data-date="2026-10-17"]').click();
+  await expect(showcase.locator("output")).toContainText(
+    "2026-10-14 to 2026-10-17",
+  );
+  const selection = await showcase.locator("output").innerText();
+  const scope = showcase.locator(".showcase-scope");
+  const initial = await scope.evaluate(
     (el) => getComputedStyle(el).backgroundColor,
   );
   await page.getByRole("button", { name: "Dark", exact: true }).click();
   await expect
-    .poll(() => sample.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .poll(() => scope.evaluate((el) => getComputedStyle(el).backgroundColor))
     .not.toBe(initial);
-  const name = await page.locator("[data-theme-name]").innerText();
-  await page.getByRole("button", { name: "Green theme" }).click();
-  await expect(page.locator("[data-theme-name]")).not.toHaveText(name);
-  await page.getByRole("tab", { name: "Calendar", exact: true }).click();
-  await expect(calendar.locator("output")).toHaveText(selection);
-  await page.getByRole("tab", { name: "Color Picker", exact: true }).click();
-  await expect(hex).toHaveValue("#277D59");
+  const selected = showcase.locator(
+    '[data-day-trigger][data-date="2026-10-14"]',
+  );
+  const color = await selected.evaluate(
+    (el) => getComputedStyle(el).backgroundColor,
+  );
+  await page.getByRole("button", { name: "Blue theme" }).click();
+  await expect
+    .poll(() => selected.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .not.toBe(color);
+  await expect(showcase.locator("output")).toHaveText(selection);
+  await expect
+    .poll(() =>
+      page.locator("body").evaluate((el) => getComputedStyle(el).color),
+    )
+    .toBe("rgb(24, 24, 24)");
+  await page
+    .getByRole("link", { name: "Explore components", exact: true })
+    .click();
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
 });
 
 test("component installation uses npm package names and contains no archive or preview instructions", async ({
@@ -192,59 +208,110 @@ test("component installation uses npm package names and contains no archive or p
     await expect(page.locator("main")).not.toContainText("Development preview");
     await expect(page.locator("main")).not.toContainText("not published");
   }
-  await page.goto("/");
-  for (const slug of pages) {
-    await page.getByLabel("Package", { exact: true }).selectOption(slug);
-    await expect(page.locator("#install-command")).toHaveText(
-      `npm install @salyra-ui/${slug}`,
-    );
-    await expect(page.locator("#install-docs")).toHaveAttribute(
-      "href",
-      `/${slug}.html#${["color-picker", "theme-studio"].includes(slug) ? "installation" : "setup"}`,
-    );
-  }
 });
 
-test("homepage demos and installation fit on a phone with keyboard navigation", async ({
+test("homepage composition and component catalog fit a phone", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-  const calendarTab = page.getByRole("tab", { name: "Calendar", exact: true });
-  await calendarTab.focus();
-  await calendarTab.press("ArrowRight");
-  await expect(
-    page.getByRole("tab", { name: "Color Picker", exact: true }),
-  ).toBeFocused();
-  await expect(page.getByLabel("Color HEX")).toBeVisible();
-  for (const name of ["Color Picker", "Theme Studio", "Calendar"]) {
-    await page.getByRole("tab", { name, exact: true }).click();
-    await expect(
-      page.locator(`[role="tabpanel"]:visible [aria-busy]`),
-    ).toHaveAttribute("aria-busy", "false");
-    expect(
-      await page
-        .locator(`[role="tabpanel"]:visible [data-demo-host]`)
-        .evaluate((host) => {
-          const bounds = host.getBoundingClientRect();
-          return [...host.children].every((child) => {
-            const rect = child.getBoundingClientRect();
-            return rect.top >= bounds.top && rect.bottom <= bounds.bottom;
-          });
-        }),
-    ).toBe(true);
+  for (const path of [
+    "/",
+    "/components.html",
+    "/components.html?category=date-time&q=range",
+  ]) {
+    await page.goto(path);
+    await expect(page.locator("h1")).toBeVisible();
+    if (path === "/")
+      await expect(page.locator("#home-showcase")).toHaveAttribute(
+        "aria-busy",
+        "false",
+      );
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
   }
+  await page.getByRole("button", { name: "Color & themes" }).click();
+  await page.getByRole("button", { name: "Reset filters" }).click();
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+});
+
+test("component search combines categories and features and preserves shared URLs", async ({
+  page,
+}) => {
+  await page.goto("/components.html");
+  const cards = page.locator("[data-component-card]:visible");
+  await expect(cards).toHaveCount(6);
+  await page.getByRole("button", { name: "Dates & time" }).click();
+  await expect(cards).toHaveCount(4);
+  await expect(page).toHaveURL(/category=date-time/);
+  const search = page.getByRole("searchbox", { name: "Search components" });
+  await search.fill("clock");
+  await expect(cards).toHaveCount(2);
+  await expect(page.locator("#component-count")).toContainText("2 components");
+  await page.reload();
+  await expect(search).toHaveValue("clock");
+  await expect(
+    page.getByRole("button", { name: "Dates & time" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(cards).toHaveCount(2);
   await page
-    .getByLabel("Package", { exact: true })
-    .selectOption("date-time-picker");
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
+    .locator('[data-component-card="time-picker"]')
+    .getByRole("link", { name: "Documentation", exact: true })
+    .click();
+  await expect(page.locator("h1")).toHaveText("Time Picker.");
+  await page.goBack();
+  await expect(search).toHaveValue("clock");
+  await expect(cards).toHaveCount(2);
+  await search.focus();
+  await search.press("Escape");
+  await expect(cards).toHaveCount(4);
+  await expect(
+    page.getByRole("button", { name: "Dates & time" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Reset filters" }).click();
+  await expect(cards).toHaveCount(6);
+  await expect(page).toHaveURL(/components\.html$/);
+});
+
+test("empty search is safe and its reset restores the catalog", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(
+    "/components.html?category=missing&q=%3Csvg%20onload%3Dalert(1)%3E",
+  );
+  const search = page.getByRole("searchbox", { name: "Search components" });
+  await expect(search).toHaveValue("<svg onload=alert(1)>");
+  await expect(
+    page.getByRole("heading", { name: "No matching components." }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^All components/ }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("[onload]")).toHaveCount(0);
+  await page.getByRole("button", { name: "Show all components" }).click();
+  await expect(search).toBeFocused();
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  await search.fill("OKLCH");
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(1);
+  await expect(
+    page.locator('[data-component-card="color-picker"]'),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Clear search" }).click();
+  await expect(search).toBeFocused();
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  expect(errors).toEqual([]);
+});
+
+test("documentation discovery and legacy package links still work", async ({
+  page,
+}) => {
+  await page.goto("/docs.html");
+  await expect(page.locator("h1")).toHaveText("Components.");
+  await page.goto("/docs.html?kit=theme-studio#reference");
+  await expect(page).toHaveURL(/theme-studio\.html#reference$/);
+  await expect(page.locator("h1")).toHaveText("Theme studio");
 });

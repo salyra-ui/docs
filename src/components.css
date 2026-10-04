@@ -1,0 +1,317 @@
+@import "./base.css";
+.components-main {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 56px 5vw 80px;
+}
+.components-heading {
+  margin-bottom: 48px;
+  max-width: 680px;
+}
+.components-heading > p:first-child {
+  font-size: 12px;
+  color: #181818;
+  margin: 0 0 20px;
+}
+.components-heading h1 {
+  font-weight: 500;
+  font-size: clamp(42px, 4.8vw, 64px);
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+  margin: 0 0 24px;
+}
+.components-heading > p:last-child {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #626262;
+  margin: 0;
+}
+.components-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 48px;
+  border-top: 1px solid #dddde2;
+  padding-top: 32px;
+  align-items: start;
+}
+.components-sidebar {
+  position: sticky;
+  top: 24px;
+}
+.components-sidebar fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.components-sidebar legend {
+  font-size: 11px;
+  color: #626262;
+  margin-bottom: 16px;
+}
+.components-sidebar button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  padding: 13px 12px;
+  font-size: 12px;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: white;
+  text-align: left;
+}
+.components-sidebar button:hover {
+  background: #f7f7f8;
+}
+.components-sidebar button[aria-pressed="true"] {
+  border-left-color: #e4002b;
+  background: #f7f7f8;
+}
+.components-sidebar button span {
+  color: #626262;
+  font-size: 11px;
+}
+.components-content {
+  min-width: 0;
+}
+.components-search label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.components-search > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #dddde2;
+  padding: 0 14px;
+  height: 48px;
+}
+.components-search svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: #626262;
+  stroke-width: 1.5;
+}
+.components-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  padding: 12px 0;
+  background: transparent;
+  width: 100%;
+  font-size: 13px;
+}
+.components-search > div:focus-within {
+  outline: 2px solid #181818;
+  outline-offset: 2px;
+}
+.components-search input:focus-visible {
+  outline: 0;
+}
+.components-search input::-webkit-search-cancel-button {
+  display: none;
+}
+.components-search button,
+.components-results button {
+  background: transparent;
+  border: 0;
+  padding: 8px 0;
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.components-results {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  margin: 8px 0 24px;
+  font-size: 12px;
+}
+.components-results p {
+  color: #626262;
+  margin: 0;
+}
+.component-category {
+  margin-bottom: 40px;
+}
+.component-category > header {
+  margin-bottom: 20px;
+}
+.component-category h2 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.7px;
+  margin: 0 0 8px;
+}
+.component-category > header p {
+  color: #626262;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+}
+.component-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid #dddde2;
+  border-left: 1px solid #dddde2;
+}
+.component-grid article {
+  min-width: 0;
+  padding: 24px;
+  border-right: 1px solid #dddde2;
+  border-bottom: 1px solid #dddde2;
+  display: flex;
+  flex-direction: column;
+}
+.component-grid article:hover {
+  background: #f7f7f8;
+}
+.component-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 10px;
+  color: #626262;
+  margin-bottom: 24px;
+}
+.component-card-heading code {
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.component-card-heading small {
+  white-space: nowrap;
+}
+.component-grid h3 {
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.7px;
+  line-height: 1.2;
+  margin: 0 0 14px;
+}
+.component-grid article > p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #626262;
+  margin: 0 0 24px;
+  flex: 1;
+}
+.component-card-links {
+  display: flex;
+  gap: 24px;
+  font-size: 11px;
+}
+.component-card-links a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.components-empty {
+  border: 1px solid #dddde2;
+  padding: 32px;
+  margin-bottom: 40px;
+}
+.components-empty h2 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.6px;
+  margin: 0 0 12px;
+}
+.components-empty p {
+  font-size: 13px;
+  color: #626262;
+  margin: 0 0 24px;
+}
+.components-empty button {
+  border: 1px solid #dddde2;
+  background: white;
+  padding: 10px 14px;
+  font-size: 12px;
+}
+.components-installation {
+  border-top: 1px solid #dddde2;
+  padding-top: 32px;
+}
+.components-installation h2 {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.8px;
+  margin: 0 0 20px;
+}
+.components-installation p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #626262;
+  max-width: 650px;
+  margin: 0 0 20px;
+}
+.components-installation a {
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 1000px) {
+  .components-layout {
+    grid-template-columns: 170px minmax(0, 1fr);
+    gap: 24px;
+  }
+  .component-grid article {
+    padding: 20px;
+  }
+  .component-card-heading {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+@media (max-width: 760px) {
+  .components-main {
+    padding-top: 40px;
+  }
+  .components-heading {
+    margin-bottom: 32px;
+  }
+  .components-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 24px;
+  }
+  .components-sidebar {
+    position: static;
+  }
+  .components-sidebar fieldset {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .components-sidebar legend {
+    margin-bottom: 12px;
+  }
+  .components-sidebar button {
+    width: auto;
+    border: 1px solid #dddde2;
+    font-size: 11px;
+    padding: 10px;
+  }
+  .components-sidebar button[aria-pressed="true"] {
+    border-color: #e4002b;
+  }
+  .component-card-heading {
+    flex-direction: row;
+  }
+}
+@media (max-width: 520px) {
+  .component-grid {
+    grid-template-columns: 1fr;
+  }
+  .components-empty {
+    padding: 24px;
+  }
+  .components-sidebar fieldset {
+    gap: 6px;
+  }
+}
