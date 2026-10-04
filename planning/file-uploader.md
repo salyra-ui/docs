@@ -225,6 +225,8 @@ Referințele și confirmările storage sunt opace pentru engine. Ele pot repreze
 
 Aplicația poate furniza doar `writePart` sau întregul adaptor storage. Callback-ul primește sesiunea, identificatorul bucății, poziția, dimensiunea așteptată, stream-ul și contextul aplicației. El poate salva pe disc, într-un serviciu remote sau în propria infrastructură, apoi întoarce o confirmare persistabilă.
 
+Suprascrierea unei singure operații păstrează formatul confirmărilor cerut de celelalte operații ale adaptorului. Dacă o salvare custom produce alte referințe, aplicația furnizează și operațiile probe, finish și abort care le pot interpreta. Validăm această compatibilitate la configurare.
+
 Stream-ul are un singur consumator. Când un callback custom deține salvarea, engine-ul nu trimite aceeași bucată și către un alt provider implicit. Validarea dimensiunii și checksum-ului, când este activ, se face prin citire incrementală. Callback-urile de notificare precum `onPartStored` primesc confirmarea după salvare, fără să consume din nou corpul request-ului.
 
 Engine-ul salvează confirmarea în session store și abia apoi confirmă request-ul clientului. Dacă o bucată a fost salvată, dar actualizarea sesiunii s-a întrerupt, `probe` permite recuperarea. O aplicație cu procesare async trebuie să definească explicit ce înseamnă o bucată salvată durabil și când poate intra în manifestul final.
@@ -245,6 +247,8 @@ Engine-ul salvează confirmarea în session store și abia apoi confirmă reques
 Un finish custom poate muta fișierul, combina bucățile sau transfera rezultatul către alt sistem. `onUploadCompleted` este notificarea ulterioară pentru logica aplicației. Salvarea unui document în baza de date, generarea de thumbnails și alte efecte ale aplicației se configurează separat de asamblarea storage.
 
 Finalizarea cu rezultat incert se reconciliază înainte de repetare. Folosim protecție împotriva finalizărilor concurente și păstrăm rezultatul final al sesiunii. Nu reconstruim manifestul doar din afirmațiile clientului și nu descărcăm toate părțile dintr-un provider care poate finaliza multipart upload-ul direct.
+
+Adaptorul S3 verifică rezultatul complet al operației, nu doar statusul HTTP. [CompleteMultipartUpload](https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html) poate întoarce o eroare în corpul unui răspuns cu status 200. Folosim interpretarea SDK-ului sau o verificare echivalentă și acoperim acest caz în testele providerului.
 
 ### Trimitere prin backend sau direct către storage
 
