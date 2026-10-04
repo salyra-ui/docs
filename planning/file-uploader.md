@@ -179,7 +179,7 @@ Java, Kotlin și Scala reutilizează un engine JVM comun. Verificăm API-urile f
 
 ### Contractul comun
 
-Pentru modul chunked custom definim o specificație versionată, scheme pentru request-uri și răspunsuri și o suită de teste HTTP. Rutele de mai jos sunt propuse, cu prefix configurabil:
+Pentru modul chunked custom definim o specificație versionată, scheme pentru request-uri și răspunsuri și o suită de teste HTTP. Rutele de mai jos sunt exemple implicite. Aplicația poate configura separat metoda și URL-ul fiecărei operații:
 
 | Rută | Responsabilitate |
 | --- | --- |
@@ -189,13 +189,70 @@ Pentru modul chunked custom definim o specificație versionată, scheme pentru r
 | `POST /uploads/:id/complete` | Verificarea bucăților și finalizarea idempotentă. |
 | `DELETE /uploads/:id` | Anularea sesiunii și cleanup-ul datelor temporare. |
 
+### Funcții de gestionare și rute proprii
+
+Engine-ul serverului expune operații independente de router: `createUpload`, `getUpload`, `receivePart`, `finishUpload` și `cancelUpload`. O aplicație poate apela aceste funcții din propriile controllere, cu date validate și contextul său.
+
+O fabrică separată de handlers conectează operațiile la request-urile framework-ului ales. Aplicația poate monta handlerul de finish pe `/documents/:id/finish`, pe `/files/:id/complete` sau pe altă rută. Numele parametrilor, autentificarea și transformarea răspunsului sunt configurabile. Clientul primește configurația corespunzătoare, cu URL-uri sau funcții care construiesc URL-ul fiecărei operații.
+
+Putem oferi și o fabrică de router gata configurat, pentru integrare rapidă. Ea folosește aceleași handlers și permite configurarea fiecărei rute. Importarea bibliotecii nu înregistrează rute și nu pornește un server.
+
+Schimbarea rutelor păstrează contractul operațiilor. Dacă aplicația schimbă și forma payload-ului, adaptorul de transport mapează datele către contractul engine-ului. Această separare păstrează compatibilitatea între limbajele backend.
+
 Lista fișierelor finalizate și ștergerea lor pot fi furnizate de aplicație prin loader și `onRemove`. Nu presupunem că un server generic de upload deține catalogul de documente al aplicației. O integrare poate expune și rute pentru acestea, configurate explicit.
 
 Contractul custom și tus sunt moduri distincte. Un backend existent poate implementa tus fără rutele propuse mai sus. [tusd](https://github.com/tus/tusd) este serverul de referință în Go și îl putem folosi pentru verificarea adaptorului client tus. Nu îl tratăm drept implementare a protocolului custom Salyra.
 
 ### Stocare și hooks
 
-Serverul primește interfețe pentru datele sesiunilor și pentru conținutul fișierelor. Implementarea de referință folosește stocare persistentă pe disc. Memoria simplă este potrivită pentru teste, nu pentru promisiunea de reluare după restart-ul serverului. Integrarea cu object storage, baze de date sau Redis se adaugă prin adaptoare, după nevoie.
+Serverul primește două interfețe independente: `sessionStore`, pentru starea transferurilor, și `storage`, pentru conținutul fișierelor. Putem avea sesiuni într-o bază de date și bucăți pe disc sau într-un bucket. Implementarea de referință folosește stocare persistentă pe disc. Memoria simplă este potrivită pentru teste, nu pentru promisiunea de reluare după restart-ul serverului.
+
+Adaptoarele de storage propuse sunt filesystem local, Amazon S3, Cloudflare R2 și unul custom. SDK-urile providerilor se importă separat de engine. Integrarea cu alte servicii de object storage și alte session stores urmează aceleași contracte.
+
+| Operație storage | Contract propus |
+| --- | --- |
+| `begin` | Pregătește destinația și întoarce referința de stocare, inclusiv un multipart upload ID unde este necesar. |
+| `writePart` | Primește un stream al bucății și informațiile ei. Întoarce o confirmare după salvare. |
+| `probe` | Verifică starea reală a bucăților pentru reconciliere. |
+| `finish` | Primește manifestul ordonat și validat de server și întoarce rezultatul final după asamblare. |
+| `inspectResult` | Rezolvă o finalizare cu rezultat incert, inclusiv când răspunsul providerului s-a pierdut. |
+| `abort` | Curăță sesiunea temporară și gestionează request-urile aflate încă în zbor. |
+| `remove` | Opțional, șterge obiectul final când aplicația autorizează această operație. |
+
+Referințele și confirmările storage sunt opace pentru engine. Ele pot reprezenta o cale locală, un object key, un multipart ID sau identificatori proprii aplicației. Fiecare adaptor le serializează într-un format versionat pentru reluare după restart.
+
+### Primirea și salvarea custom a unei bucăți
+
+Aplicația poate furniza doar `writePart` sau întregul adaptor storage. Callback-ul primește sesiunea, identificatorul bucății, poziția, dimensiunea așteptată, stream-ul și contextul aplicației. El poate salva pe disc, într-un serviciu remote sau în propria infrastructură, apoi întoarce o confirmare persistabilă.
+
+Stream-ul are un singur consumator. Când un callback custom deține salvarea, engine-ul nu trimite aceeași bucată și către un alt provider implicit. Validarea dimensiunii și checksum-ului, când este activ, se face prin citire incrementală. Callback-urile de notificare precum `onPartStored` primesc confirmarea după salvare, fără să consume din nou corpul request-ului.
+
+Engine-ul salvează confirmarea în session store și abia apoi confirmă request-ul clientului. Dacă o bucată a fost salvată, dar actualizarea sesiunii s-a întrerupt, `probe` permite recuperarea. O aplicație cu procesare async trebuie să definească explicit ce înseamnă o bucată salvată durabil și când poate intra în manifestul final.
+
+### Finish și asamblarea fișierului
+
+`finishUpload` verifică manifestul serverului: prezența tuturor bucăților, ordinea, dimensiunile și checksum-urile configurate. Apoi trece sesiunea în `finalizing` și invocă `storage.finish`. Rezultatul final este salvat înainte de răspuns. Repetarea request-ului returnează același rezultat.
+
+| Storage | Comportamentul propus pentru finish |
+| --- | --- |
+| Filesystem local | Citește bucățile în ordine, le copiază prin stream într-un fișier temporar și publică rezultatul după verificare. Publicarea prin rename presupune același filesystem. |
+| Amazon S3 | Providerul asamblează părțile prin CompleteMultipartUpload, cu identificatorii păstrați în manifest. |
+| Cloudflare R2 | Adaptorul finalizează multipart upload-ul prin API-ul configurat, ținând cont de capabilitățile R2. |
+| Custom | Aplicația furnizează finish-ul și întoarce id-ul sau referința rezultatului după finalizare. |
+
+[Amazon S3 multipart upload](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html) asamblează părțile în ordinea numerelor lor la finalizare. ETag-ul nu este tratat drept checksum universal al conținutului. [Cloudflare R2](https://developers.cloudflare.com/r2/api/s3/api/) documentează separat compatibilitatea operațiilor S3. Fiecare adaptor declară limitele și capabilitățile proprii, folosite la alegerea dimensiunii și concurenței chunks.
+
+Un finish custom poate muta fișierul, combina bucățile sau transfera rezultatul către alt sistem. `onUploadCompleted` este notificarea ulterioară pentru logica aplicației. Salvarea unui document în baza de date, generarea de thumbnails și alte efecte ale aplicației se configurează separat de asamblarea storage.
+
+Finalizarea cu rezultat incert se reconciliază înainte de repetare. Folosim protecție împotriva finalizărilor concurente și păstrăm rezultatul final al sesiunii. Nu reconstruim manifestul doar din afirmațiile clientului și nu descărcăm toate părțile dintr-un provider care poate finaliza multipart upload-ul direct.
+
+### Trimitere prin backend sau direct către storage
+
+Primul mod trimite bucățile prin backend-ul aplicației, care le redirecționează ca stream către storage. Al doilea poate utiliza request-uri semnate pentru upload direct către provider, când adaptorul îl suportă.
+
+În modul direct, backend-ul creează sesiunea, autorizează părțile și verifică confirmările la storage. Clientul raportează rezultatul request-ului, iar backend-ul îl verifică înainte de a marca partea drept confirmată. Finalizarea și anularea rămân operații ale backend-ului. URL-urile expirate pot fi reemise pentru aceeași parte și sesiune încă validă. Configurația CORS și verificările providerului sunt documentate pentru acest mod.
+
+Reset pornește o sesiune nouă. Cleanup-ul celei vechi rămâne urmărit separat dacă eșuează. Adaptoarele gestionează și concurența dintre parts aflate în zbor, finish și cancel. Astfel un răspuns întârziat nu finalizează o sesiune anulată.
 
 Operațiile urmăresc aceste reguli:
 
@@ -241,7 +298,7 @@ Exemple pentru toate cele șase adaptoare, cu Preview/Code, cod copiat și custo
 9. Progres în procent, bytes și ETA, plus un transport fără progres măsurabil.
 10. Disabled, readOnly, limite și erori de validare custom.
 
-Testele trebuie să includă cazul în care serverul salvează un chunk, dar răspunsul se pierde. Alte cazuri necesare: dublarea request-urilor, refresh înainte de persistență, fișier diferit cu același nume, sesiune expirată, abort în timpul backoff-ului, finalize ambiguu, remove eșuat și răspuns întârziat după reset. Verificăm și resursele după destroy, izolarea SSR, accesibilitatea și numărul de notificări pentru liste mari.
+Testele trebuie să includă cazul în care serverul salvează un chunk, dar răspunsul se pierde. Alte cazuri necesare: dublarea request-urilor, refresh înainte de persistență, fișier diferit cu același nume, sesiune expirată, abort în timpul backoff-ului, finalize ambiguu, remove eșuat și răspuns întârziat după reset. Testele storage includ manifest incomplet, părți în ordine diferită, întrerupere între salvarea bucății și checkpoint, finish repetat, finish concurent cu cancel și URL semnat expirat. Verificăm și resursele după destroy, izolarea SSR, accesibilitatea și numărul de notificări pentru liste mari.
 
 Documentăm contractul de backend și implementările de referință pentru fiecare limbaj suportat. Simulările din docs trebuie să fie identificate drept simulări, iar testele de transfer trebuie să ruleze și împotriva serverelor reale de test.
 
