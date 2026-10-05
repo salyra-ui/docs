@@ -37,10 +37,11 @@ async function rewrite(folder) {
             "</head>",
             `<link rel="stylesheet" href="${base}docs-version-navigation.css"></head>`,
           );
-          text = text.replace(
-            "</body>",
-            `<script type="module" src="${base}docs-version-navigation.js"></script></body>`,
-          );
+          if (version)
+            text = text.replace(
+              "</body>",
+              `<script type="module" src="${base}docs-version-navigation.js"></script></body>`,
+            );
         }
       }
       await writeFile(path, text);
@@ -49,4 +50,6 @@ async function rewrite(folder) {
 }
 await rewrite("dist");
 await writeFile("dist/.nojekyll", "");
-console.log(`Built Salyra UI documentation for the component library (base ${base}).`);
+console.log(
+  `Built Salyra UI documentation for the component library (base ${base}).`,
+);

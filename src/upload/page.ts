@@ -1,3 +1,4 @@
+import { mountDocumentationVersion } from "../versions";
 import { siteHeader, siteFooter } from "../shell";
 import { base as siteBase } from "../catalog";
 const base = document.body.dataset.uploadBase ?? siteBase;
@@ -231,7 +232,7 @@ const nav = [
   ["ssr", "SSR"],
 ];
 document.querySelector("#app")!.innerHTML =
-  `${siteHeader("components")}<main class="upload-main"><div class="upload-heading"><div><span class="upload-kicker">Components / Files</span><h1>File Uploader</h1><p>File selection, transfer queues and chunked resume. Compose the controls around your application's upload endpoint.</p><div class="upload-related"><a href="${base}upload-examples.html">Working examples</a><a href="${base}upload-server.html">Backend integration</a><a href="${base}upload-changelog.html">Changelog</a></div></div><a class="upload-version" href="${base}upload-changelog.html">0.1.0</a></div><div class="upload-layout"><nav class="upload-nav" aria-label="On this page">${nav.map(([id, label]) => `<a href="#${id}">${label}</a>`).join("")}</nav><div>${sections.join("")}</div></div></main>${siteFooter()}`;
+  `${siteHeader("components")}<main class="upload-main"><div class="upload-heading"><div><span class="upload-kicker"><a href="${siteBase}components.html?environment=frontend">Frontend</a> / Files</span><h1>File Uploader</h1><p>File selection, transfer queues and chunked resume. Compose the controls around your application's upload endpoint.</p><div class="upload-related"><a href="${base}upload-examples.html">Working examples</a><a href="${base}upload-server.html">Backend: Upload Server</a><a href="${base}upload-changelog.html">Changelog</a></div></div><div class="documentation-version" data-documentation-version></div></div><div class="upload-layout"><nav class="upload-nav" aria-label="On this page">${nav.map(([id, label]) => `<a href="#${id}">${label}</a>`).join("")}</nav><div>${sections.join("")}</div></div></main>${siteFooter()}`;
 document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((button) =>
   button.addEventListener("click", async () => {
     await navigator.clipboard.writeText(
@@ -257,3 +258,5 @@ document
       );
     }),
   );
+
+mountDocumentationVersion("upload", "file-uploader.html");

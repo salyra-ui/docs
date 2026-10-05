@@ -1,4 +1,6 @@
 import { siteHeader, siteFooter } from "../shell";
+import "./version-navigation";
+import "./version-navigation.css";
 import releases from "../../documentation/releases.json";
 import { changelogContent } from "./changelog";
 import "./changelog.css";
@@ -16,6 +18,8 @@ import { mountExplorer, mountRenderingLab, codePanel, escape } from "./gallery";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const page = document.body.dataset.page ?? "docs";
 const base = import.meta.env.BASE_URL;
+document.body.dataset.siteRoot ??= base;
+document.body.dataset.docsVersion ??= releases.current;
 const releaseLabel = `v${releases.current}${releases.versions.find((release) => release.version === releases.current)?.status === "preview" ? " preview" : ""}`;
 const link = (file: string) => {
   if (file === "site.html") return `${base}index.html`;

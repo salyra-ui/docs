@@ -1,3 +1,4 @@
+import { mountDocumentationVersion } from "../versions";
 import { siteHeader, siteFooter } from "../shell";
 import { base as siteBase } from "../catalog";
 const base = document.body.dataset.uploadBase ?? siteBase;
@@ -347,7 +348,7 @@ const sections = [
   [
     "installation",
     "Installation",
-    `<p>Keep the server library separate from browser imports. The Node package uses streams and persistent storage.</p>${code("npm install @salyra-ui/upload-server", "Terminal")}${code(server)}<p><code>getAuthenticatedUser</code> and <code>authorizeDocumentTransfer</code> are application functions. The library calls them through your context and authorization callbacks.</p>`,
+    `<p>Keep the server library separate from browser imports. The Node package uses streams and persistent storage.</p>${code("npm install @salyra-ui/upload-server" + (document.body.dataset.uploadVersion ? "@" + document.body.dataset.uploadVersion : ""), "Terminal")}${code(server)}<p><code>getAuthenticatedUser</code> and <code>authorizeDocumentTransfer</code> are application functions. The library calls them through your context and authorization callbacks.</p>`,
   ],
   ["options", "Server options", table(serverOptions)],
   [
@@ -426,7 +427,7 @@ const sections = [
   ],
 ];
 document.querySelector("#app")!.innerHTML =
-  `${siteHeader("components")}<main class="upload-main"><div class="upload-heading"><div><span class="upload-kicker">File Uploader / Backend</span><h1>Upload Server</h1><p>Own the routes, session store and file destination. Use the transfer protocol with your application authentication and catalog.</p><div class="upload-related"><a href="${base}file-uploader.html">Client guide</a><a href="${base}upload-examples.html">Working examples</a></div></div><a class="upload-version" href="${base}upload-changelog.html">0.1.0</a></div><div class="upload-layout"><nav class="upload-nav" aria-label="On this page">${sections.map(([id, title]) => `<a href="#${id}">${title}</a>`).join("")}</nav><div>${sections.map(([id, title, content]) => `<section id="${id}" class="upload-section"><h2>${title}</h2>${content}</section>`).join("")}</div></div></main>${siteFooter()}`;
+  `${siteHeader("components")}<main class="upload-main"><div class="upload-heading"><div><span class="upload-kicker"><a href="${siteBase}components.html?environment=backend">Backend</a> / Files</span><h1>Upload Server</h1><p>Own the routes, session store and file destination. Use the transfer protocol with your application authentication and catalog.</p><div class="upload-related"><a href="${base}file-uploader.html">Frontend: File Uploader</a><a href="${base}upload-examples.html">Working examples</a></div></div><div class="documentation-version" data-documentation-version></div></div><div class="upload-layout"><nav class="upload-nav" aria-label="On this page">${sections.map(([id, title]) => `<a href="#${id}">${title}</a>`).join("")}</nav><div>${sections.map(([id, title, content]) => `<section id="${id}" class="upload-section"><h2>${title}</h2>${content}</section>`).join("")}</div></div></main>${siteFooter()}`;
 document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((button) =>
   button.addEventListener("click", async () => {
     await navigator.clipboard.writeText(
@@ -457,3 +458,5 @@ document
       link.textContent = item.name + " source and example";
     }),
   );
+
+mountDocumentationVersion("upload", "upload-server.html");

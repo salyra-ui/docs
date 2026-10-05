@@ -146,7 +146,7 @@ test("version archive keeps its examples and downloads inside the same snapshot"
     page.getByRole("link", { name: "Working examples", exact: true }),
   ).toHaveAttribute("href", base + "upload-examples.html");
   await expect(
-    page.getByRole("link", { name: "Backend integration", exact: true }),
+    page.getByRole("link", { name: "Backend: Upload Server", exact: true }),
   ).toHaveAttribute("href", base + "upload-server.html");
   const download = page.getByRole("link", {
     name: "Minified JavaScript",
@@ -175,13 +175,11 @@ for (const url of [
   test(`cancel and retry work in ${url}`, async ({ page }) => {
     await page.goto(url);
     const root = page.locator("#gallery");
-    await root
-      .locator("[data-upload-input]")
-      .setInputFiles({
-        name: "retry-image.png",
-        mimeType: "image/png",
-        buffer: Buffer.alloc(1024 * 1024, 65),
-      });
+    await root.locator("[data-upload-input]").setInputFiles({
+      name: "retry-image.png",
+      mimeType: "image/png",
+      buffer: Buffer.alloc(1024 * 1024, 65),
+    });
     await root
       .getByRole("button", { name: "Upload files", exact: true })
       .click();

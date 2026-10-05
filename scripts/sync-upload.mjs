@@ -18,7 +18,7 @@ await cp(join(root, "examples/snippets.ts"), "src/upload/snippets.ts");
 let examples = await readFile(join(root, "examples/main.ts"), "utf8");
 examples = examples.replace(
   /import\s+['"].\/styles\.css['"];/,
-  "import './examples.css';\nimport { demoTransport, demoFetch as fetch } from './demo';\nimport { base as siteBase } from '../catalog';\nconst base = document.body.dataset.uploadBase ?? siteBase;",
+  "import { mountDocumentationVersion } from '../versions';\nimport './examples.css';\nimport { demoTransport, demoFetch as fetch } from './demo';\nimport { base as siteBase } from '../catalog';\nconst base = document.body.dataset.uploadBase ?? siteBase;",
 );
 examples = examples
   .replaceAll("../packages/file-uploader/src/core", "./runtime/core/index.js")
@@ -56,6 +56,17 @@ if (!examples.includes("import { demoTransport"))
   );
 if (!examples.includes("transport: demoTransport"))
   throw new Error("Missing simulated transport after example synchronization");
+examples = examples
+  .replace(
+    '<aside class="sidebar">',
+    '<aside class="sidebar"><div class="documentation-version" data-documentation-version></div>',
+  )
+  .replace('href="https://salyra-ui.github.io/docs/"', 'href="${siteBase}"')
+  .replace(
+    'href="https://salyra-ui.github.io/docs/components.html"',
+    'href="${siteBase}components.html"',
+  );
+examples += '\nmountDocumentationVersion("upload", "upload-examples.html");\n';
 await writeFile("src/upload/examples.ts", examples);
 await cp(join(root, "examples/styles.css"), "src/upload/examples.css");
 await mkdir("public/downloads/file-uploader", { recursive: true });
