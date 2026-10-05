@@ -79,6 +79,117 @@ const storage = s3Storage({
 
 // For R2, use r2Storage with an S3Client configured for your R2 endpoint.
 // Keep credentials on the server. The browser uses the application upload routes.`;
+const encryptedStorage = `import { encryptedFilesystemStorage } from '@salyra-ui/upload-server/encryption';
+import { filesystemSessionStore } from '@salyra-ui/upload-server/filesystem';
+import { createUploadServer } from '@salyra-ui/upload-server';
+
+const storage = encryptedFilesystemStorage({
+  directory: './private-uploads/encrypted',
+  keys: {
+    current: async context => ({
+      id: 'uploads-v2',
+      key: await secrets.getBytes('uploads-v2', context),
+    }),
+    resolve: (id, context) => secrets.getBytes(id, context),
+  },
+});
+const engine = createUploadServer({
+  sessionStore: filesystemSessionStore('./private-uploads/sessions'),
+  storage,
+  scope: context => getUserId(context),
+  authorize: (operation, session, context) =>
+    authorizeDocumentTransfer(operation, session, context),
+});`;
+const encryptedDownload = `import { pipeline } from 'node:stream/promises';
+
+// Inside your application's document download route:
+const context = await getApplicationContext(request);
+const document = await findDocument(documentId, context);
+await authorizeDocumentDownload(document, context);
+const body = await storage.read(document.uploadId, context);
+response.setHeader('Content-Type', 'application/octet-stream');
+response.setHeader('Content-Length', document.size);
+try {
+  await pipeline(body, response);
+} catch (error) {
+  // The stream closes on corruption or a disconnected client.
+  reportDownloadFailure(error);
+}`;
+const providerEncryption = `const storage = s3Storage({
+  client,
+  bucket: 'documents',
+  journal,
+  encryption: {
+    mode: 'aws:kms',
+    keyId: 'alias/document-uploads',
+    bucketKey: true,
+  },
+});
+// For S3-managed keys, use encryption: { mode: 'AES256' }.`;
+const encryptionOptions: Row[] = [
+  [
+    "directory",
+    "string",
+    "Required",
+    "Private storage root. Each completed upload is an encrypted directory. read() assembles it as a single decrypted stream.",
+  ],
+  [
+    "keys.current(context)",
+    "EncryptionKey | Promise<EncryptionKey>",
+    "Required",
+    "Returns { id, key } for new sessions. The key ID is nonempty and at most 128 characters.",
+  ],
+  [
+    "keys.resolve(id, context)",
+    "EncryptionKeyMaterial | undefined | Promise<EncryptionKeyMaterial | undefined>",
+    "Required",
+    "Loads a retained key version for resume and download. Missing keys fail with ENCRYPTION_KEY_MISSING and leave stored content intact.",
+  ],
+  [
+    "EncryptionKeyMaterial",
+    "Uint8Array | Buffer | secret KeyObject",
+    "32 bytes",
+    "Load from your secret store. The adapter never saves the raw key or generates a replacement when it is missing.",
+  ],
+  [
+    "storage.read(id, context?)",
+    "Promise<Readable>",
+    "Application route",
+    "Authorize first, then pipe the stream to your response. Each 64 KiB frame is authenticated before it is returned. A later failure interrupts the download.",
+  ],
+  [
+    "storage.remove(result, context)",
+    "Promise<void>",
+    "Application route",
+    "Deletes committed encrypted content. Cancel only deletes temporary content.",
+  ],
+  [
+    "result.encryption",
+    "{ format: 'salyra-aes256gcm/1', keyId: string }",
+    "Completed result",
+    "Identifies the format and pinned key. id, size and sha256 describe the original file.",
+  ],
+];
+const providerEncryptionOptions: Row[] = [
+  [
+    "encryption.mode",
+    "'AES256' | 'aws:kms'",
+    "Provider policy",
+    "Requests S3-managed keys or AWS KMS when creating a new object. Applied to multipart uploads and empty files.",
+  ],
+  [
+    "encryption.keyId",
+    "string",
+    "Required for aws:kms",
+    "KMS key ID, ARN or alias. The key must be available under the application's AWS policy.",
+  ],
+  [
+    "encryption.bucketKey",
+    "boolean",
+    "AWS default",
+    "Requests an S3 Bucket Key for KMS encryption. Only accepted with aws:kms.",
+  ],
+];
 const serverOptions: Row[] = [
   [
     "sessionStore",
@@ -411,14 +522,19 @@ const sections = [
     `${table(storageMethods)}<p>Filesystem storage assembles verified parts through bounded streams and publishes with a rename on the same filesystem. Original filenames stay in metadata. Store the content outside the public web root.</p><p><code>withStorageOverrides</code> replaces compatible operations. When changing reference formats, replace the full begin/write/probe/finish/inspect/abort lifecycle together. Partial overrides must explicitly declare compatibleReferences.</p>`,
   ],
   [
+    "encryption",
+    "Encrypted storage",
+    `<p>Encrypt file contents on disk while keeping the same uploader and chunked transport. The Node adapter accepts keys from your application and returns a decrypted stream for downloads.</p>${code(encryptedStorage)}<p><code>secrets</code>, <code>getUserId</code> and the authorization callback are application functions. Load a persistent 32-byte key from your secret store. Do not generate a new storage key each time the server starts.</p>${table(encryptionOptions)}<h3>Rotate keys without breaking resume</h3><p>Make the new key available through <code>resolve</code>, then select it in <code>current</code>. Existing sessions and files retain their original key ID. Keep old keys until their files are removed. Rotation does not re-encrypt files already stored.</p><h3>Serve a decrypted download</h3>${code(encryptedDownload)}<p>The document lookup, access checks and error reporting belong to your application. Keep the encrypted directory outside the public web root. A missing key or failed authentication tag stops the download.</p><h3>What is encrypted</h3><p>File content is encrypted with AES-256-GCM in 64 KiB frames. Each write attempt uses a fresh part-key salt. Finish verifies the complete file before publishing it. Cancel, Retry, Reset and resume keep their existing behavior. Supported chunk sizes are 1 byte to 64 MiB, with up to 10,000 parts.</p><p>The server still sees the uploaded content. Use HTTPS for transport. Filenames, sizes, descriptors and plaintext checksums remain metadata. This adapter provides storage encryption, not browser end-to-end encryption.</p><p><a href="${base}protocol/upload-encryption-v1.md">Read the storage format and recovery rules</a></p>`,
+  ],
+  [
     "providers",
     "S3 and Cloudflare R2",
-    `<p>Install the provider SDK only in the backend. The engine's main import does not include it.</p>${code("npm install @aws-sdk/client-s3", "Terminal")}${code(storage)}<p>The journal persists part receipts and the multipart reference. Its interface provides get, put, getReference, putReference and remove. Use a shared persistent journal when your deployment has several hosts.</p><p>S3/R2 chunks use a minimum requested size of 5 MiB and a maximum of 10,000 parts. The last part may be smaller. ETags stay separate from SHA-256. Unknown R2 parts without trusted journal receipts are sent again.</p><p>The backend streams chunks to the provider and performs finalization. This adapter does not issue presigned browser-upload URLs. Configure provider lifecycle cleanup for incomplete multipart sessions whose creation response was never received.</p>`,
+    `<p>Install the provider SDK only in the backend. The engine's main import does not include it.</p>${code("npm install @aws-sdk/client-s3", "Terminal")}${code(storage)}<h3>S3 encryption settings</h3>${code(providerEncryption)}${table(providerEncryptionOptions)}<p>AWS performs encryption and decryption. New settings do not change existing multipart sessions. R2 encrypts objects through its own service and rejects these AWS encryption options. The encrypted filesystem adapter is separate from provider encryption.</p><p>The journal persists part receipts and the multipart reference. Its interface provides get, put, getReference, putReference and remove. Use a shared persistent journal when your deployment has several hosts.</p><p>S3/R2 chunks use a minimum requested size of 5 MiB and a maximum of 10,000 parts. The last part may be smaller. ETags stay separate from SHA-256. Unknown R2 parts without trusted journal receipts are sent again.</p><p>The backend streams chunks to the provider and performs finalization. This adapter does not issue presigned browser-upload URLs. Configure provider lifecycle cleanup for incomplete multipart sessions whose creation response was never received.</p>`,
   ],
   [
     "native",
     "Native backend integrations",
-    `<p>The implementations below use the same browser protocol. Each includes filesystem storage and configurable hooks. JVM integrations share one engine. C++ wraps the C engine.</p>${nativeTabs}<p>The native storage interfaces accept custom implementations. The supplied S3/R2 adapters are currently in the Node package. Selecting a different backend language does not install those provider adapters.</p><p>Local example programs bind to localhost. Use your application HTTP server for deployment. The C socket example is a local contract test server.</p>`,
+    `<p>The implementations below use the same browser protocol. Each includes filesystem storage and configurable hooks. JVM integrations share one engine. C++ wraps the C engine.</p>${nativeTabs}<p>The native storage interfaces accept custom implementations. The supplied S3/R2 and encrypted filesystem adapters are in the Node package. For native backends, implement encryption in your storage interface or use provider encryption. Selecting a different backend language does not install those provider adapters.</p><p>Local example programs bind to localhost. Use your application HTTP server for deployment. The C socket example is a local contract test server.</p>`,
   ],
   [
     "recovery",

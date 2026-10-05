@@ -193,3 +193,34 @@ for (const url of [
     await expect(root.locator("[data-item-error]")).toBeEmpty();
   });
 }
+
+test("documents encrypted storage, retained keys and downloads in current and versioned guides", async ({
+  page,
+}) => {
+  for (const prefix of ["", "versions/file-uploader/0.1.0/"]) {
+    await page.goto(`/${prefix}upload-server.html#encryption`);
+    const section = page.locator("#encryption");
+    await expect(
+      section.getByRole("heading", { name: "Encrypted storage", exact: true }),
+    ).toBeVisible();
+    await expect(
+      section.locator("code").filter({ hasText: "encryptedFilesystemStorage" }),
+    ).toContainText("@salyra-ui/upload-server/encryption");
+    await expect(
+      section.getByRole("cell", {
+        name: "keys.resolve(id, context)",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      section.locator("pre").filter({ hasText: "storage.read" }),
+    ).toContainText("authorizeDocumentDownload");
+    const format = section.getByRole("link", {
+      name: "Read the storage format and recovery rules",
+    });
+    const href = await format.getAttribute("href");
+    const response = await page.request.get(href!);
+    expect(response.status()).toBe(200);
+    expect(await response.text()).toContain("HKDF-SHA-256");
+  }
+});

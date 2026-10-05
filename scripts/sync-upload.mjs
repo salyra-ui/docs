@@ -83,7 +83,15 @@ await cp(
   "public/protocol/upload-v1.openapi.json",
 );
 await cp(join(root, "protocol/schemas.json"), "public/protocol/upload-v1.json");
+await cp(
+  join(root, "ENCRYPTION.md"),
+  "public/protocol/upload-encryption-v1.md",
+);
 await mkdir("documentation/file-uploader/0.1.0", { recursive: true });
+await cp(
+  join(root, "ENCRYPTION.md"),
+  "documentation/file-uploader/0.1.0/encryption.md",
+);
 await cp(
   join(root, "protocol/README.md"),
   "documentation/file-uploader/0.1.0/protocol.md",
