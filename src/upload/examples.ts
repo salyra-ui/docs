@@ -250,7 +250,10 @@ for (const example of examples) {
           "finalizing",
         ].includes(item.status),
         resume: item.status === "paused",
-        retry: item.status === "failed" && item.error?.code !== "VALIDATION",
+        retry:
+          ["failed", "canceled"].includes(item.status) &&
+          !!item.file &&
+          item.error?.code !== "VALIDATION",
         cancel: !["completed", "canceled", "failed"].includes(item.status),
         reset: !["completed", "idle", "validating"].includes(item.status),
         remove: item.status === "completed",
@@ -293,6 +296,7 @@ for (const example of examples) {
         snapshot.persistenceError?.message ?? "";
       const cleanups = root.querySelector(".cleanups")!;
       cleanups.innerHTML = snapshot.cleanups
+        .filter((record) => record.status === "failed")
         .map(
           (record) =>
             `<div class="cleanup"><span class="error">${escape(record.metadata.name)}: ${escape(record.error?.message ?? "Cleaning up temporary data")}</span>${record.status === "failed" ? `<button type="button" data-cleanup-id="${escape(record.id)}">Retry cleanup</button>` : ""}</div>`,

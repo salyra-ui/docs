@@ -328,7 +328,7 @@ export const methods: Row[] = [
     "start(id?)",
     "void",
     "Transfer",
-    "Queue one row or all eligible rows. Failed validation is not bypassed.",
+    "Queue one row or all eligible rows. Canceled rows start with a new session. Failed validation is not bypassed.",
   ],
   [
     "pause(id)",
@@ -346,7 +346,7 @@ export const methods: Row[] = [
     "retry(id)",
     "void",
     "Transfer",
-    "Queue a failed transfer. HTTP retries the whole file. Chunked reconciles confirmed parts.",
+    "Queue a failed or canceled transfer. Canceled transfers use a new session and send from the beginning. Other chunked retries reconcile saved parts.",
   ],
   [
     "cancel(id)",
@@ -468,7 +468,7 @@ export const states: Row[] = [
   [
     "canceled",
     "Canceled locally",
-    "reset or forget",
+    "retry, reset or forget",
     "Remote cleanup may still be pending or failed in snapshot.cleanups.",
   ],
   [

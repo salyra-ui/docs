@@ -167,3 +167,31 @@ test("version archive keeps its examples and downloads inside the same snapshot"
   await expect(page.locator("#http")).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+for (const url of [
+  "/upload-examples.html",
+  "/versions/file-uploader/0.1.0/upload-examples.html",
+]) {
+  test(`cancel and retry work in ${url}`, async ({ page }) => {
+    await page.goto(url);
+    const root = page.locator("#gallery");
+    await root
+      .locator("[data-upload-input]")
+      .setInputFiles({
+        name: "retry-image.png",
+        mimeType: "image/png",
+        buffer: Buffer.alloc(1024 * 1024, 65),
+      });
+    await root
+      .getByRole("button", { name: "Upload files", exact: true })
+      .click();
+    await expect(root.locator(".file-status")).toHaveText("uploading");
+    await root.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(root.locator(".file-status")).toHaveText("canceled");
+    await expect(root.locator("[data-item-error]")).toBeEmpty();
+    await expect(root.locator(".cleanups")).toBeEmpty();
+    await root.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(root.locator(".file-status")).toHaveText("completed");
+    await expect(root.locator("[data-item-error]")).toBeEmpty();
+  });
+}

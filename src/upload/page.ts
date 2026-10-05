@@ -203,7 +203,7 @@ const sections = [
   section(
     "history",
     "Existing files and removal",
-    `<p>Use initialFiles for SSR records or a paginated loader for the application catalog. Removing a completed file calls your endpoint. Forgetting it only removes the local row.</p>${code(history)}<p>A failed onRemove callback sets <code>removeError</code>. Repeating remove retries the application operation. A temporary-data cleanup failure is stored in <code>snapshot.cleanups</code> and uses <code>retryCleanup(cleanupId)</code>.</p>`,
+    `<p>Use initialFiles for SSR records or a paginated loader for the application catalog. Removing a completed file calls your endpoint. Forgetting it only removes the local row.</p>${code(history)}<p>A failed onRemove callback sets <code>removeError</code>. Repeating remove retries the application operation. Cancel stops the current transfer. Retry starts a canceled file again with a new session. Pause keeps the session for Resume. A plain HTTP transport aborts its request and uses onCancel when you provide remote cleanup. A temporary-data cleanup failure is stored in <code>snapshot.cleanups</code> and uses <code>retryCleanup(cleanupId)</code>.</p>`,
   ),
   section(
     "customization",

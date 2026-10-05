@@ -284,7 +284,7 @@ const integrations = [
   {
     name: "Go",
     path: "go",
-    code: `import upload "github.com/salyra-ui/file-uploader/backend/go"\n\nengine := upload.New(upload.Options{\n  Sessions: upload.DiskSessions{Directory: "./uploads/sessions"},\n  Storage: upload.DiskStorage{Directory: "./uploads/content"},\n})\nhandler := upload.Handler{Engine: engine}\n// Mount handler in your application net/http router.\n\n// Build and run the reference example:\n// go test ./...\n// go run ./cmd/example`,
+    code: `import upload "github.com/salyra-ui/file-upload/backend/go"\n\nengine := upload.New(upload.Options{\n  Sessions: upload.DiskSessions{Directory: "./uploads/sessions"},\n  Storage: upload.DiskStorage{Directory: "./uploads/content"},\n})\nhandler := upload.Handler{Engine: engine}\n// Mount handler in your application net/http router.\n\n// Build and run the reference example:\n// go test ./...\n// go run ./cmd/example`,
   },
   {
     name: "Rust",
@@ -342,7 +342,7 @@ const integrations = [
     code: `#include "salyra_upload.hpp"\n\nsalyra::disk disk(upload_disk_new("uploads"));\nupload_options options{};\noptions.sessions = upload_disk_sessions(disk.get());\noptions.storage = upload_disk_storage(disk.get());\nsalyra::engine engine(options);\n\nauto result = engine.finish(sessionId, requestContext);\n// Engine and returned JSON use RAII. The engine is movable and not copyable.\n// Storage and streaming callbacks share the C implementation.`,
   },
 ];
-const nativeTabs = `<div class="upload-code" data-native-code><div class="upload-code-head"><div class="upload-language-tabs" role="tablist" aria-label="Backend language">${integrations.map((item, index) => `<button type="button" role="tab" data-native="${item.name}" aria-selected="${index === 0}">${item.name}</button>`).join("")}</div><button type="button" data-copy>Copy code</button></div><pre><code>${escape(integrations[0].code)}</code></pre></div><p><a data-native-source href="https://github.com/salyra-ui/file-uploader/tree/main/backend/go">Go source and example</a></p>`;
+const nativeTabs = `<div class="upload-code" data-native-code><div class="upload-code-head"><div class="upload-language-tabs" role="tablist" aria-label="Backend language">${integrations.map((item, index) => `<button type="button" role="tab" data-native="${item.name}" aria-selected="${index === 0}">${item.name}</button>`).join("")}</div><button type="button" data-copy>Copy code</button></div><pre><code>${escape(integrations[0].code)}</code></pre></div><p><a data-native-source href="https://github.com/salyra-ui/file-upload/tree/main/backend/go">Go source and example</a></p>`;
 const sections = [
   [
     "installation",
@@ -453,7 +453,7 @@ document
       const link = document.querySelector<HTMLAnchorElement>(
         "[data-native-source]",
       )!;
-      link.href = `https://github.com/salyra-ui/file-uploader/tree/main/backend/${item.path}`;
+      link.href = `https://github.com/salyra-ui/file-upload/tree/main/backend/${item.path}`;
       link.textContent = item.name + " source and example";
     }),
   );

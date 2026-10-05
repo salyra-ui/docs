@@ -181,6 +181,7 @@ var SalyraFileUploader = (() => {
     const listeners = /* @__PURE__ */ new Set(), itemListeners = /* @__PURE__ */ new Map();
     const runs = /* @__PURE__ */ new Map(), generations = /* @__PURE__ */ new Map(), validation = /* @__PURE__ */ new Map();
     const auxiliary = /* @__PURE__ */ new Set();
+    const validated = /* @__PURE__ */ new Set();
     let destroyed = false, active = 0, saveChain = Promise.resolve(), restoreTask;
     let idsSnapshot = "";
     function assertAlive() {
@@ -280,6 +281,10 @@ var SalyraFileUploader = (() => {
       metadata,
       file,
       status: "idle",
+      session: void 0,
+      result: void 0,
+      error: void 0,
+      removeError: void 0,
       parts: [],
       uploadedBytes: 0,
       transferredBytes: 0,
@@ -691,7 +696,7 @@ var SalyraFileUploader = (() => {
         });
       }
     }
-    function stop(id) {
+    function stop(id, update, durable = false) {
       const run = runs.get(id);
       generations.set(id, (generations.get(id) ?? 0) + 1);
       validation.get(id)?.abort();
@@ -700,14 +705,25 @@ var SalyraFileUploader = (() => {
         run.controller.abort();
         clearTimeout(run.noticeTimer);
         clearTimeout(run.metricsTimer);
-        patch(id, {
-          activeMilliseconds: run.initialActive + Date.now() - run.started,
-          transferredBytes: getItem(id)?.uploadedBytes,
-          progress: transport.capabilities.progress ? getItem(id).totalBytes ? getItem(id).uploadedBytes / getItem(id).totalBytes * 100 : 0 : null,
-          bytesPerSecond: null,
-          etaSeconds: null,
-          nextRetryAt: null
-        });
+      }
+      if (run || update) {
+        const item = getItem(id);
+        if (!item) return;
+        patch(
+          id,
+          {
+            ...run ? {
+              activeMilliseconds: run.initialActive + Date.now() - run.started,
+              transferredBytes: item.uploadedBytes,
+              progress: transport.capabilities.progress ? item.totalBytes ? item.uploadedBytes / item.totalBytes * 100 : 0 : null,
+              bytesPerSecond: null,
+              etaSeconds: null,
+              nextRetryAt: null
+            } : {},
+            ...update
+          },
+          durable
+        );
       }
     }
     async function cleanup(record) {
@@ -778,6 +794,8 @@ var SalyraFileUploader = (() => {
       }
     }
     function scheduleCleanup(item) {
+      if (!transport.capabilities.resume && !transport.capabilities.terminate && !options.onCancel)
+        return Promise.resolve();
       if (!item.session && (!transport.capabilities.resume || ["idle", "validating", "awaiting-file"].includes(item.status)))
         return Promise.resolve();
       const record = {
@@ -792,6 +810,27 @@ var SalyraFileUploader = (() => {
       state = { ...state, cleanups: [...state.cleanups, record] };
       persist();
       return cleanup(record);
+    }
+    async function validateItem(id, file, ready) {
+      if (destroyed || getItem(id)?.status !== "validating") return;
+      const ctl = new AbortController();
+      validation.set(id, ctl);
+      try {
+        const fail = !accepts(file, options.accept) ? "File format is not accepted" : options.maxFileSize !== void 0 && file.size > options.maxFileSize ? "File exceeds the size limit" : options.maxFiles !== void 0 && state.items.filter((i) => i.status !== "failed").length > options.maxFiles ? "File count exceeds the limit" : options.maxTotalSize !== void 0 && state.items.filter((i) => i.status !== "failed").reduce((sum, i) => sum + i.totalBytes, 0) > options.maxTotalSize ? "Total file size exceeds the limit" : await options.validateFile?.(file, ctl.signal);
+        ctl.signal.throwIfAborted();
+        if (destroyed || !getItem(id) || validation.get(id) !== ctl) return;
+        if (fail) throw new TransferError(fail, "VALIDATION");
+        validated.add(id);
+        patch(id, { status: ready, error: void 0 }, true);
+        pump();
+      } catch (error) {
+        if (!isAbort(error) && !destroyed && validation.get(id) === ctl) {
+          patch(id, { status: "failed", error: errorValue(error) }, true);
+          reportError(errorValue(error), getItem(id));
+        }
+      } finally {
+        if (validation.get(id) === ctl) validation.delete(id);
+      }
     }
     const store = {
       getSnapshot: () => state,
@@ -821,23 +860,7 @@ var SalyraFileUploader = (() => {
           };
           collection([...state.items, item]);
           ids.push(id);
-          const ctl = new AbortController();
-          validation.set(id, ctl);
-          try {
-            const fail = !accepts(file, options.accept) ? "File format is not accepted" : options.maxFileSize !== void 0 && file.size > options.maxFileSize ? "File exceeds the size limit" : options.maxFiles !== void 0 && state.items.filter((i) => i.status !== "failed").length > options.maxFiles ? "File count exceeds the limit" : options.maxTotalSize !== void 0 && state.items.filter((i) => i.status !== "failed").reduce((sum, i) => sum + i.totalBytes, 0) > options.maxTotalSize ? "Total file size exceeds the limit" : await options.validateFile?.(file, ctl.signal);
-            ctl.signal.throwIfAborted();
-            if (destroyed || !getItem(id)) continue;
-            if (fail) throw new TransferError(fail, "VALIDATION");
-            patch(id, { status: options.autoUpload ? "queued" : "idle" }, true);
-            pump();
-          } catch (error) {
-            if (!isAbort(error) && !destroyed) {
-              patch(id, { status: "failed", error: errorValue(error) }, true);
-              reportError(errorValue(error), getItem(id));
-            }
-          } finally {
-            validation.delete(id);
-          }
+          await validateItem(id, file, options.autoUpload ? "queued" : "idle");
         }
         return ids;
       },
@@ -932,14 +955,32 @@ var SalyraFileUploader = (() => {
           throw new Error("Pause the transfer before replacing its file");
         if (file.name !== item.metadata.name || file.size !== item.totalBytes)
           throw new TransferError("Select the original file", "FILE_MISMATCH");
+        validated.delete(id);
         patch(id, { file, status: "paused", error: void 0 }, true);
       },
       start(id) {
         assertAlive();
         if (!mutable()) return;
         for (const item of state.items)
-          if ((!id || item.id === id) && item.file && ["idle", "paused", "failed", "awaiting-file"].includes(item.status) && (!runs.has(item.id) || runs.get(item.id).generation !== (generations.get(item.id) ?? 0)) && item.error?.code !== "VALIDATION")
-            patch(item.id, { status: "queued", error: void 0 }, true);
+          if ((!id || item.id === id) && item.file && ["idle", "paused", "failed", "awaiting-file", "canceled"].includes(
+            item.status
+          ) && (!runs.has(item.id) || runs.get(item.id).generation !== (generations.get(item.id) ?? 0)) && item.error?.code !== "VALIDATION") {
+            const needsValidation = !validated.has(item.id);
+            const status = needsValidation ? "validating" : "queued";
+            if (item.status === "canceled" || item.error?.code === "CANCELED") {
+              stop(
+                item.id,
+                {
+                  ...baseItem(item.id, item.metadata, item.file),
+                  status
+                },
+                true
+              );
+            } else {
+              patch(item.id, { status, error: void 0 }, true);
+            }
+            if (needsValidation) void validateItem(item.id, item.file, "queued");
+          }
         pump();
       },
       pause(id) {
@@ -953,8 +994,7 @@ var SalyraFileUploader = (() => {
           "finalizing"
         ].includes(item.status))
           return;
-        stop(id);
-        patch(id, { status: "paused" }, true);
+        stop(id, { status: "paused", error: void 0 }, true);
       },
       resume(id) {
         store.start(id);
@@ -965,17 +1005,25 @@ var SalyraFileUploader = (() => {
       async cancel(id) {
         if (!mutable()) return;
         const item = getItem(id);
-        if (!item || item.status === "completed") return;
-        stop(id);
-        patch(id, { status: "canceled" }, true);
+        if (!item || ["completed", "canceled"].includes(item.status)) return;
+        stop(
+          id,
+          {
+            status: "canceled",
+            error: void 0,
+            nextRetryAt: null,
+            bytesPerSecond: null,
+            etaSeconds: null
+          },
+          true
+        );
         await scheduleCleanup(item);
       },
       async reset(id) {
         if (!mutable()) return;
         const item = getItem(id);
         if (!item || item.status === "completed") return;
-        stop(id);
-        patch(
+        stop(
           id,
           {
             ...baseItem(id, item.metadata, item.file),
@@ -1005,6 +1053,7 @@ var SalyraFileUploader = (() => {
           await options.onRemove(item, ctl.signal);
           if (!destroyed) {
             stop(id);
+            validated.delete(id);
             collection(state.items.filter((current2) => current2.id !== id));
             itemListeners.get(id)?.forEach((fn) => fn());
           }
@@ -1018,6 +1067,7 @@ var SalyraFileUploader = (() => {
       forget(id) {
         if (!mutable()) return;
         stop(id);
+        validated.delete(id);
         collection(state.items.filter((item) => item.id !== id));
         itemListeners.get(id)?.forEach((fn) => fn());
       },
@@ -1035,6 +1085,7 @@ var SalyraFileUploader = (() => {
         if (destroyed) return;
         for (const id of runs.keys()) stop(id);
         destroyed = true;
+        validated.clear();
         validation.forEach((ctl) => ctl.abort());
         auxiliary.forEach((ctl) => ctl.abort());
         listeners.clear();
@@ -1099,7 +1150,9 @@ var SalyraFileUploader = (() => {
   }
   function uploadActions(item) {
     return {
-      canStart: !!item.file && ["idle", "paused", "failed", "awaiting-file"].includes(item.status) && item.error?.code !== "VALIDATION",
+      canStart: !!item.file && ["idle", "paused", "failed", "awaiting-file", "canceled"].includes(
+        item.status
+      ) && item.error?.code !== "VALIDATION",
       canPause: [
         "queued",
         "verifying",
@@ -1108,7 +1161,7 @@ var SalyraFileUploader = (() => {
         "finalizing"
       ].includes(item.status),
       canResume: !!item.file && ["paused", "awaiting-file"].includes(item.status),
-      canRetry: !!item.file && item.status === "failed" && item.error?.code !== "VALIDATION",
+      canRetry: !!item.file && ["failed", "canceled"].includes(item.status) && item.error?.code !== "VALIDATION",
       canCancel: !["completed", "canceled"].includes(item.status),
       canReset: item.status !== "completed",
       canRemove: item.status === "completed" && !item.removing,
