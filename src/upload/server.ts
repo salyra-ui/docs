@@ -132,7 +132,7 @@ const serverOptions: Row[] = [
     "onEvent",
     "(event, context) => void | Promise<void>",
     "Unset",
-    "Post-commit notification. type is created, part-stored, completed, canceled or expired. Event IDs are stable and include the part index when present.",
+    "Notification delivered after transaction locks are released. It can inspect the committed session. type is created, part-stored, completed, canceled or expired. Event IDs are stable and include the part index when present.",
   ],
   [
     "onNotificationError",
@@ -423,7 +423,7 @@ const sections = [
   [
     "recovery",
     "Recovery and notifications",
-    `<p>The storage probe recovers parts saved before the session ledger could be updated. Finalization records its result before acknowledging completion. An uncertain finish inspects the destination before repeating work.</p><p>Callbacks after commit use stable event IDs. For business operations that must survive process crashes, persist an application outbox keyed by event ID. A callback alone cannot guarantee durable event delivery.</p><p>Temporary cancellation and application removal are separate. The application owns its list of completed documents and its onRemove endpoint. Schedule expiry sweeps and provider cleanup through your own workers.</p>`,
+    `<p>The storage probe recovers parts saved before the session ledger could be updated. Finalization records its result before acknowledging completion. An uncertain finish inspects the destination before repeating work. If a finalizing ledger expires after the file was published, probe and duplicate creation recover the completed result. Node expiry sweeps check the destination before deleting temporary data.</p><p>Node callbacks run after session locks are released and can read the committed session. Native callbacks may still run inside the operation lock, so enqueue their work and avoid calling engine operations from them.</p><p>Callbacks after commit use stable event IDs. For business operations that must survive process crashes, persist an application outbox keyed by event ID. A callback alone cannot guarantee durable event delivery.</p><p>Temporary cancellation and application removal are separate. The application owns its list of completed documents and its onRemove endpoint. Schedule expiry sweeps and provider cleanup through your own workers.</p>`,
   ],
 ];
 document.querySelector("#app")!.innerHTML =

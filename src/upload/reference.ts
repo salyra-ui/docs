@@ -82,7 +82,7 @@ export const options: Row[] = [
     "persistence",
     "UploadPersistence | false",
     "false",
-    "Store session metadata and cleanup records. indexedDBPersistence(namespace) supplies the browser implementation. File content and auth headers are not saved.",
+    "Store session metadata and cleanup records. indexedDBPersistence(namespace) supplies the browser implementation. Slow writes keep only the latest waiting checkpoint. File content and auth headers are not saved.",
   ],
   [
     "initialFiles",
@@ -322,7 +322,7 @@ export const methods: Row[] = [
     "attach(id, file)",
     "Promise<void>",
     "Resume",
-    "Associate the original file with an inactive row. Resume verifies every server-confirmed chunk before continuing.",
+    "Associate the original file with an inactive row and abort its previous validator. Canceled rows keep their state so Retry creates a new session. Completed rows reject attach. Reset expired rows first. Resume verifies every confirmed chunk.",
   ],
   [
     "start(id?)",

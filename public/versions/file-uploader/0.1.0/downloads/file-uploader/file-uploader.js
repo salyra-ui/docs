@@ -184,6 +184,8 @@ var SalyraFileUploader = (() => {
     const validated = /* @__PURE__ */ new Set();
     let destroyed = false, active = 0, saveChain = Promise.resolve(), restoreTask;
     let idsSnapshot = "";
+    let pendingSave;
+    let saving = false;
     function assertAlive() {
       if (destroyed) throw new Error("Uploader is destroyed");
     }
@@ -230,10 +232,25 @@ var SalyraFileUploader = (() => {
           }
         }))
       };
-      saveChain = saveChain.then(() => adapter.save(snapshot)).catch((error) => {
-        if (!destroyed) {
-          state = { ...state, persistenceError: errorValue(error) };
-          notify();
+      pendingSave = snapshot;
+      if (saving) return;
+      saving = true;
+      saveChain = saveChain.then(async () => {
+        try {
+          while (pendingSave) {
+            const next = pendingSave;
+            pendingSave = void 0;
+            try {
+              await adapter.save(next);
+            } catch (error) {
+              if (!destroyed) {
+                state = { ...state, persistenceError: errorValue(error) };
+                notify();
+              }
+            }
+          }
+        } finally {
+          saving = false;
         }
       });
     }
@@ -951,12 +968,27 @@ var SalyraFileUploader = (() => {
         if (!mutable()) return;
         const item = getItem(id);
         if (!item) throw new Error("Unknown upload");
+        if (item.status === "completed")
+          throw new TransferError("The upload is already completed", "COMPLETED");
+        if (item.status === "expired")
+          throw new TransferError(
+            "Reset the expired transfer before selecting its file",
+            "EXPIRED"
+          );
         if (runs.has(id))
           throw new Error("Pause the transfer before replacing its file");
         if (file.name !== item.metadata.name || file.size !== item.totalBytes)
           throw new TransferError("Select the original file", "FILE_MISMATCH");
         validated.delete(id);
-        patch(id, { file, status: "paused", error: void 0 }, true);
+        stop(
+          id,
+          {
+            file,
+            status: item.status === "canceled" ? "canceled" : "paused",
+            error: void 0
+          },
+          true
+        );
       },
       start(id) {
         assertAlive();

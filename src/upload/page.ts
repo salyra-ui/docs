@@ -199,7 +199,7 @@ const sections = [
   section(
     "resume",
     "Persistence and resume",
-    `<p>Choose an IndexedDB namespace per application and authenticated user. Restoration loads metadata, not File content. An unfinished transfer waits for the original file to be selected again.</p>${code(`const persistence = indexedDBPersistence('documents:' + authenticatedUserId);\nconst store = createUploader({ transport, persistence });\nawait store.restore();\n\nawait store.attach(restoredItemId, selectedOriginalFile);\nstore.resume(restoredItemId);`)}<p>The server checkpoint is checked first. Every confirmed chunk is hashed against the reselected file before any saved bytes are reused. Matching names and sizes alone do not prove identity.</p><p>Pause keeps the session. Reset starts from zero with a new key and retains a separate cleanup record for the old session. If IndexedDB fails, the current transfer can continue and <code>persistenceError</code> describes the failure. Browser session locks coordinate cooperating tabs where the API is available.</p>`,
+    `<p>Choose an IndexedDB namespace per application and authenticated user. Restoration loads metadata, not File content. An unfinished transfer waits for the original file to be selected again.</p>${code(`const persistence = indexedDBPersistence('documents:' + authenticatedUserId);\nconst store = createUploader({ transport, persistence });\nawait store.restore();\n\nawait store.attach(restoredItemId, selectedOriginalFile);\nstore.resume(restoredItemId);`)}<p>The server checkpoint is checked first. Every confirmed chunk is hashed against the reselected file before any saved bytes are reused. Matching names and sizes alone do not prove identity.</p><p>Cancel keeps its state after the file is reselected. Retry then creates a fresh session. Attach cannot reopen a completed record, and an expired record needs Reset first.</p><p>Pause keeps the session. Reset starts from zero with a new key and retains a separate cleanup record for the old session. If IndexedDB fails, the current transfer can continue and <code>persistenceError</code> describes the failure. Browser session locks coordinate cooperating tabs where the API is available.</p>`,
   ),
   section(
     "history",
@@ -214,7 +214,7 @@ const sections = [
   section(
     "ssr",
     "SSR and lifecycle",
-    `<p>Create a store per server-rendered tree. Never share a module-level mutable queue between requests. Existing records can render on the server. Inputs, uploads and browser restoration start after mount.</p><p>Owned Root stores are destroyed with their view. Supplied stores remain alive until the application calls destroy. Preview URLs, subscriptions, active requests and retry timers have their own cleanup.</p><p>Import the backend library only on the server. Storage credentials and provider SDKs never belong in the browser uploader.</p>`,
+    `<p>Create a store per server-rendered tree. Never share a module-level mutable queue between requests. Existing records can render on the server. Inputs, uploads and browser restoration start after mount.</p><p>Owned Root stores are destroyed with their view. React also disposes the previous owned store when a replacement is supplied. Supplied stores remain alive until the application calls destroy. Preview URLs, subscriptions, active requests and retry timers have their own cleanup.</p><p>Import the backend library only on the server. Storage credentials and provider SDKs never belong in the browser uploader.</p>`,
   ),
 ];
 const nav = [

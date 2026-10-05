@@ -11,8 +11,6 @@ try {
 } catch (error) {
   if (error.code !== "ENOENT") throw error;
 }
-const site = (process.env.PAGES_BASE ?? "/").replace(/\/?$/, "/");
-const base = `/__SALYRA_SITE_BASE__/versions/file-uploader/${version}/`;
 await mkdir(folder, { recursive: true });
 await cp("dist/assets", `${folder}/assets`, { recursive: true });
 await cp("dist/downloads/file-uploader", `${folder}/downloads/file-uploader`, {
@@ -27,7 +25,7 @@ for (const page of [
   "upload-changelog",
 ]) {
   const html = (await readFile(`dist/${page}.html`, "utf8"))
-    .replaceAll(`${site}assets/`, `./assets/`)
+    .replace(/((?:src|href)=")\/[^" ]*assets\//g, "$1./assets/")
     .replace("<body", `<body data-upload-version="${version}"`);
   const prepared = html.replace(
     /(<body[^>]*>)/,
