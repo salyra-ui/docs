@@ -37,7 +37,7 @@ for (const slug of pages)
       .getByRole("link", { name: "Components", exact: true })
       .click();
     await expect(page).toHaveURL(/components\.html$/);
-    await expect(page.locator("[data-component-card]")).toHaveCount(6);
+    await expect(page.locator("[data-component-card]")).toHaveCount(8);
     expect(errors).toEqual([]);
   });
 test("date package snippets follow the component instead of always using DateTimePicker", async ({
@@ -193,7 +193,7 @@ test("homepage has one composition whose selection survives theme changes", asyn
   await page
     .getByRole("link", { name: "Explore components", exact: true })
     .click();
-  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(8);
 });
 
 test("component installation uses npm package names and contains no archive or preview instructions", async ({
@@ -234,7 +234,7 @@ test("homepage composition and component catalog fit a phone", async ({
   }
   await page.getByRole("button", { name: "Color & themes" }).click();
   await page.getByRole("button", { name: "Reset filters" }).click();
-  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(8);
 });
 
 test("component search combines categories and features and preserves shared URLs", async ({
@@ -242,14 +242,14 @@ test("component search combines categories and features and preserves shared URL
 }) => {
   await page.goto("/components.html");
   const cards = page.locator("[data-component-card]:visible");
-  await expect(cards).toHaveCount(6);
+  await expect(cards).toHaveCount(8);
   await page.getByRole("button", { name: "Dates & time" }).click();
   await expect(cards).toHaveCount(4);
   await expect(page).toHaveURL(/category=date-time/);
   const search = page.getByRole("searchbox", { name: "Search components" });
   await search.fill("clock");
   await expect(cards).toHaveCount(2);
-  await expect(page.locator("#component-count")).toContainText("2 components");
+  await expect(page.locator("#component-count")).toContainText("2 packages");
   await page.reload();
   await expect(search).toHaveValue("clock");
   await expect(
@@ -271,7 +271,7 @@ test("component search combines categories and features and preserves shared URL
     page.getByRole("button", { name: "Dates & time" }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Reset filters" }).click();
-  await expect(cards).toHaveCount(6);
+  await expect(cards).toHaveCount(8);
   await expect(page).toHaveURL(/components\.html$/);
 });
 
@@ -286,7 +286,7 @@ test("empty search is safe and its reset restores the catalog", async ({
   const search = page.getByRole("searchbox", { name: "Search components" });
   await expect(search).toHaveValue("<svg onload=alert(1)>");
   await expect(
-    page.getByRole("heading", { name: "No matching components." }),
+    page.getByRole("heading", { name: "No matching packages." }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: /^All components/ }),
@@ -294,7 +294,7 @@ test("empty search is safe and its reset restores the catalog", async ({
   await expect(page.locator("[onload]")).toHaveCount(0);
   await page.getByRole("button", { name: "Show all components" }).click();
   await expect(search).toBeFocused();
-  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(8);
   await search.fill("OKLCH");
   await expect(page.locator("[data-component-card]:visible")).toHaveCount(1);
   await expect(
@@ -302,7 +302,7 @@ test("empty search is safe and its reset restores the catalog", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Clear search" }).click();
   await expect(search).toBeFocused();
-  await expect(page.locator("[data-component-card]:visible")).toHaveCount(6);
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(8);
   expect(errors).toEqual([]);
 });
 
@@ -310,8 +310,135 @@ test("documentation discovery and legacy package links still work", async ({
   page,
 }) => {
   await page.goto("/docs.html");
-  await expect(page.locator("h1")).toHaveText("Components.");
+  await expect(page.locator("h1")).toHaveText("Find your package.");
   await page.goto("/docs.html?kit=theme-studio#reference");
   await expect(page).toHaveURL(/theme-studio\.html#reference$/);
   await expect(page.locator("h1")).toHaveText("Theme studio");
+});
+
+test("overview separates frontend packages from the backend and keeps runtime filters in the URL", async ({
+  page,
+}) => {
+  await page.goto("/components.html");
+  await expect(
+    page.locator('[data-environment-section="frontend"] [data-component-card]'),
+  ).toHaveCount(7);
+  const backend = page.locator('[data-environment-section="backend"]');
+  await expect(backend).toContainText("@salyra-ui/upload-server");
+  await expect(backend).toContainText("Node.js");
+  await page
+    .getByRole("navigation", { name: "Documentation areas" })
+    .getByRole("link", { name: /Backend/ })
+    .click();
+  await expect(page).toHaveURL(/environment=backend.*#backend/);
+  await expect(page.locator("[data-component-card]:visible")).toHaveCount(1);
+  await page.reload();
+  await expect(page.locator('[data-environment="backend"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await backend
+    .getByRole("link", { name: "Documentation", exact: true })
+    .click();
+  await expect(page).toHaveURL(/upload-server\.html$/);
+  await expect(page.locator(".upload-kicker")).toContainText("Backend");
+  await page
+    .getByRole("link", { name: "Frontend: File Uploader", exact: true })
+    .click();
+  await expect(page.locator(".upload-kicker")).toContainText("Frontend");
+});
+
+test("each package has a version permalink to a working snapshot in the central docs", async ({
+  page,
+  request,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/components.html");
+  const links = await page
+    .locator(".component-card-heading > a")
+    .evaluateAll((elements) =>
+      elements.map((element) => (element as HTMLAnchorElement).href),
+    );
+  expect(links).toHaveLength(8);
+  for (const link of links) expect((await request.get(link)).ok()).toBe(true);
+  await page
+    .locator('[data-component-card="date-picker"] .component-card-heading > a')
+    .click();
+  await expect(page).toHaveURL(
+    /versions\/calendar\/0\.1\.0\/date-picker\.html$/,
+  );
+  await expect(
+    page.getByRole("combobox", { name: "Documentation version" }),
+  ).toHaveValue("0.1.0");
+  await expect(page.locator("#setup")).toContainText(
+    "npm install @salyra-ui/date-picker@0.1.0",
+  );
+  await page.getByRole("link", { name: "Try the working examples." }).click();
+  await expect(page).toHaveURL(
+    /versions\/calendar\/0\.1\.0\/date-examples\.html#picker$/,
+  );
+  await expect(
+    page.locator("#picker [data-day-trigger]").first(),
+  ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Latest documentation", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/date-examples\.html#picker$/);
+});
+
+test("version navigation covers client, server and existing color docs", async ({
+  page,
+}) => {
+  for (const path of [
+    "/file-uploader.html",
+    "/upload-server.html",
+    "/calendar.html",
+    "/color-picker.html",
+    "/theme-studio.html",
+  ]) {
+    await page.goto(path);
+    const version = page.getByRole("combobox", {
+      name: "Documentation version",
+    });
+    await expect(version).toHaveCount(1);
+    await expect(version).toBeVisible();
+  }
+  await page.goto("/upload-server.html#storage");
+  await page
+    .getByRole("combobox", { name: "Documentation version" })
+    .selectOption("0.1.0");
+  await expect(page).toHaveURL(
+    /versions\/file-uploader\/0\.1\.0\/upload-server\.html#storage$/,
+  );
+  await expect(page.locator("#installation")).toContainText(
+    "npm install @salyra-ui/upload-server@0.1.0",
+  );
+  await page
+    .getByRole("link", { name: "Frontend: File Uploader", exact: true })
+    .click();
+  await expect(page).toHaveURL(
+    /versions\/file-uploader\/0\.1\.0\/file-uploader\.html$/,
+  );
+  await page
+    .getByRole("link", { name: "Latest documentation", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/file-uploader\.html$/);
+});
+
+test("an archived guide discovers later versions without replacing its content", async ({
+  page,
+}) => {
+  await page.route("**/package-versions.json", async (route) => {
+    const response = await route.fetch();
+    const catalog = await response.json();
+    catalog.upload.versions = ["0.2.0", "0.1.0"];
+    await route.fulfill({ response, json: catalog });
+  });
+  await page.goto("/versions/file-uploader/0.1.0/upload-server.html");
+  const version = page.getByRole("combobox", { name: "Documentation version" });
+  await expect(version).toHaveValue("0.1.0");
+  await expect(version.locator("option")).toHaveText(["v0.2.0", "v0.1.0"]);
+  await expect(page.locator("#installation")).toContainText(
+    "@salyra-ui/upload-server@0.1.0",
+  );
 });

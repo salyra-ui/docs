@@ -1,0 +1,17 @@
+{
+  "version": "0.1.0",
+  "packages": [
+    "calendar",
+    "date-picker",
+    "time-picker",
+    "date-time-picker"
+  ],
+  "pages": [
+    "calendar.html",
+    "date-picker.html",
+    "time-picker.html",
+    "date-time-picker.html",
+    "date-examples.html",
+    "date-changelog.html"
+  ]
+}

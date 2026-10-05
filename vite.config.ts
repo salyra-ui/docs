@@ -1,6 +1,11 @@
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
 const pages = [
+  "file-uploader",
+  "upload",
+  "upload-server",
+  "upload-examples",
+  "upload-changelog",
   "index",
   "docs",
   "components",

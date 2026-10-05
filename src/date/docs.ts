@@ -4,7 +4,9 @@ import {
   type DateComponent,
 } from "./component-examples";
 import { siteHeader, siteFooter } from "../shell";
-import { base } from "../catalog";
+import { base as siteBase } from "../catalog";
+import { mountDocumentationVersion } from "../versions";
+const base = document.body.dataset.dateBase ?? siteBase;
 import pickerControlsSource from "./picker-controls.ts?raw";
 import pickerControlsStyles from "./picker-controls.css?raw";
 import { escapeHTML } from "@salyra-ui/calendar";
@@ -234,7 +236,7 @@ const parts = [
   ["Action", "Apply, Cancel or Clear with your own text and classes."],
 ];
 document.querySelector("#app")!.innerHTML =
-  `${siteHeader(document.body.dataset.component)}<div class="docs-layout"><aside class="docs-sidebar"><a href="#setup">Setup</a><a href="#vanilla-assets">Vanilla assets</a><a href="#composition">Composition</a><a href="#values">Values & ranges</a><a href="#customization">Customization</a><a href="#recipes">Recipes</a><a href="#parts">Part props</a><a href="#options">Options</a><a href="#methods">Store methods</a><a href="#ssr">SSR & time zones</a></aside><main class="docs-content"><p class="eyebrow"><a href="${base}date-changelog.html">v0.1.0 · Changelog</a></p><h1>${info.name}.</h1><p>${info.description}</p><section id="setup"><h2>Installation</h2><p>Install ${info.name}, then import the adapter for your application.</p><pre><code>npm install @salyra-ui/${component}</code></pre><p>Each package has <code>/react</code>, <code>/svelte</code>, <code>/vue</code>, <code>/angular</code>, <code>/astro</code> and <code>/vanilla</code> entries. Import one adapter. The other frameworks are optional peer dependencies and are not included in that import.</p>${
+  `${siteHeader(document.body.dataset.component)}<div class="docs-layout"><aside class="docs-sidebar"><div class="documentation-version" data-documentation-version></div><a href="#setup">Setup</a><a href="#vanilla-assets">Vanilla assets</a><a href="#composition">Composition</a><a href="#values">Values & ranges</a><a href="#customization">Customization</a><a href="#recipes">Recipes</a><a href="#parts">Part props</a><a href="#options">Options</a><a href="#methods">Store methods</a><a href="#ssr">SSR & time zones</a></aside><main class="docs-content"><p class="eyebrow"><a href="${base}date-changelog.html">v0.1.0 · Changelog</a></p><h1>${info.name}.</h1><p>${info.description}</p><section id="setup"><h2>Installation</h2><p>Install ${info.name}, then import the adapter for your application.</p><pre><code>npm install @salyra-ui/${component}${document.body.dataset.dateVersion ? "@" + document.body.dataset.dateVersion : ""}</code></pre><p>Each package has <code>/react</code>, <code>/svelte</code>, <code>/vue</code>, <code>/angular</code>, <code>/astro</code> and <code>/vanilla</code> entries. Import one adapter. The other frameworks are optional peer dependencies and are not included in that import.</p>${
     requiredPackages.length > 1
       ? `<p>npm also installs ${requiredPackages
           .filter((slug) => slug !== component)
@@ -574,3 +576,5 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
 }
+
+mountDocumentationVersion("calendar", `${component}.html`);

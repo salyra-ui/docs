@@ -1,0 +1,5 @@
+{
+  "color": { "folder": "", "versions": ["1.0.1", "1.0.0", "0.3.0"] },
+  "calendar": { "folder": "calendar/", "versions": ["0.1.0"] },
+  "upload": { "folder": "file-uploader/", "versions": ["0.1.0"] }
+}

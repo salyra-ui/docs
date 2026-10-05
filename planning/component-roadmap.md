@@ -37,9 +37,9 @@ Apoi extragem o bază comună pentru popover și dialog din comportamentele exis
 
 ## Ordinea în care aș începe
 
-1. Combobox. O bază bună aici ajută imediat MultiSelect, CommandMenu, TreeSelect și TimeZonePicker.
-2. MultiSelect. Îl compunem din logica de selecție deja construită, cu chips care aparțin aplicației.
-3. FileUploader. Are un caz clar de utilizare și ar trebui să lase transportul la alegerea aplicației.
+1. FileUploader. Direcția discutată pe 4 octombrie 2026 include chunks, retry, reluare după refresh, customizare și adaptoare de server. Vezi [planul detaliat](file-uploader.md).
+2. Combobox. O bază bună aici ajută imediat MultiSelect, CommandMenu, TreeSelect și TimeZonePicker.
+3. MultiSelect. Îl compunem din logica de selecție deja construită, cu chips care aparțin aplicației.
 4. NumberField. Completează formularele și ne dă o bază reutilizabilă pentru filtre și durate.
 5. Scheduler. Este cea mai naturală continuare a Calendar, dar îl împărțim în pași: afișarea și acțiunile evenimentelor, apoi mutarea și redimensionarea.
 
